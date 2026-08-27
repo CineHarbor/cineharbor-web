@@ -1,0 +1,704 @@
+import { localServiceFetch } from '@/lib/desktop/local-service-access';
+import { getRuntimeConfig } from '@/lib/runtime-config';
+import { buildApiUrl } from '@/lib/transport/endpoint';
+
+import { DownloadDomainError } from './request';
+import {
+  DownloadTask,
+  ManifestParseResult,
+  ResourceIndexRecord,
+} from './types';
+
+interface DesktopDownloadCacheMetaResponse {
+  exists: boolean;
+  url: string;
+  status?: number;
+  contentType?: string;
+  sizeBytes?: number;
+}
+
+export interface DesktopDownloadRuntimeStorageInfoResponse {
+  runtimeKind: 'desktop-local';
+  rootDir: string;
+  cacheBodyDir: string;
+  cacheMetaDir: string;
+  resourceIndexDir: string;
+  sqlitePath: string;
+}
+
+export interface DesktopDownloadEngineSettingsUpdate {
+  maxConcurrentTasks: number;
+}
+
+export type DesktopDownloadEngineCommand =
+  | 'pause'
+  | 'resume'
+  | 'retry'
+  | 'cancel'
+  | 'delete';
+
+export type DesktopDownloadEngineBulkCommand = Exclude<
+  DesktopDownloadEngineCommand,
+  'delete'
+>;
+
+export type DesktopDownloadTaskRemovedReason = 'cancelled' | 'deleted';
+
+export type DesktopDownloadEngineEvent =
+  | {
+      type: 'taskUpserted';
+      taskId: string;
+      status: DownloadTask['status'];
+    }
+  | {
+      type: 'taskStatusChanged';
+      taskId: string;
+      status: DownloadTask['status'];
+      command: DesktopDownloadEngineCommand;
+    }
+  | {
+      type: 'taskRemoved';
+      taskId: string;
+      reason: DesktopDownloadTaskRemovedReason;
+    }
+  | {
+      type: 'maxConcurrentTasksChanged';
+      maxConcurrentTasks: number;
+    };
+
+export interface DesktopDownloadEngineSnapshot {
+  maxConcurrentTasks: number;
+  tasks: Record<string, DownloadTask>;
+  lastEvent?: DesktopDownloadEngineEvent | null;
+}
+
+export interface DesktopDownloadEngineSnapshotSubscriptionOptions {
+  onSnapshot: (snapshot: DesktopDownloadEngineSnapshot) => void;
+  onError?: (error: Error) => void;
+}
+
+export type DesktopDownloadExecutorMode = 'desktop-runtime' | 'web-cache';
+
+export const DESKTOP_DOWNLOAD_RUNTIME_ERROR_TASK_NOT_FOUND =
+  'download_runtime_task_not_found';
+
+const DESKTOP_DOWNLOAD_RUNTIME_POLL_INTERVAL_MS = 2_000;
+
+interface DesktopDownloadRuntimeErrorPayload {
+  error?: string;
+  code?: string;
+}
+
+function ensureDesktopLocalDownloadRuntime(): void {
+  if (!isDesktopLocalDownloadRuntimeEnabled()) {
+    throw new Error(
+      'Desktop local download runtime is unavailable in the current build.'
+    );
+  }
+}
+
+function buildDesktopDownloadRuntimeUrl(
+  path: string,
+  searchParams?: Record<string, string>
+): string {
+  return buildApiUrl(`/download-runtime${path}`, searchParams);
+}
+
+async function buildDesktopDownloadRuntimeError(
+  response: Response
+): Promise<DownloadDomainError> {
+  let errorMessage = `Desktop download runtime request failed: ${response.status}`;
+  let errorCode = 'download_runtime_request_failed';
+
+  try {
+    const payload = (await response
+      .clone()
+      .json()) as DesktopDownloadRuntimeErrorPayload;
+    if (typeof payload.error === 'string' && payload.error.trim()) {
+      errorMessage = payload.error.trim();
+    }
+    if (typeof payload.code === 'string' && payload.code.trim()) {
+      errorCode = payload.code.trim();
+    }
+  } catch {
+    try {
+      const fallbackText = (await response.text()).trim();
+      if (fallbackText) {
+        errorMessage = fallbackText;
+      }
+    } catch {
+      // Ignore secondary parsing failures and keep the status fallback.
+    }
+  }
+
+  return new DownloadDomainError({
+    code: errorCode,
+    message: errorMessage,
+    status: response.status,
+  });
+}
+
+async function parseJsonResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    throw await buildDesktopDownloadRuntimeError(response);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export function isDesktopLocalDownloadRuntimeEnabled(): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const runtimeConfig = getRuntimeConfig();
+  return Boolean(
+    runtimeConfig.APP_TARGET === 'desktop' && runtimeConfig.API_BASE_URL?.trim()
+  );
+}
+
+export function getDesktopDownloadExecutorMode(): DesktopDownloadExecutorMode {
+  const runtimeConfig = getRuntimeConfig();
+
+  if (runtimeConfig.APP_TARGET === 'desktop') {
+    return 'desktop-runtime';
+  }
+
+  return 'web-cache';
+}
+
+export function getDesktopDownloadExecutorLabel(): string {
+  const executorMode = getDesktopDownloadExecutorMode();
+
+  if (executorMode === 'desktop-runtime') {
+    return '桌面本地下载运行时（Rust）';
+  }
+
+  return '浏览器离线缓存';
+}
+
+export function getDesktopDownloadRuntimeLabel(): string {
+  return getDesktopDownloadExecutorLabel();
+}
+
+export async function getDesktopDownloadRuntimeStorageInfo(): Promise<DesktopDownloadRuntimeStorageInfoResponse> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/storage-info'),
+    {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadRuntimeStorageInfoResponse>(response);
+}
+
+export async function putDesktopDownloadCacheEntry(
+  url: string,
+  response: Response
+): Promise<void> {
+  ensureDesktopLocalDownloadRuntime();
+  const body = await response.arrayBuffer();
+
+  const uploadResponse = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/cache', {
+      url,
+    }),
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type':
+          response.headers.get('content-type') || 'application/octet-stream',
+        'X-CineHarbor-Response-Status': String(response.status),
+      },
+      body,
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  await parseJsonResponse(uploadResponse);
+}
+
+export async function getDesktopDownloadCacheMeta(
+  url: string
+): Promise<DesktopDownloadCacheMetaResponse> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/cache/meta', {
+      url,
+    }),
+    {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadCacheMetaResponse>(response);
+}
+
+export async function getDesktopDownloadCachedResponse(
+  url: string
+): Promise<Response | undefined> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/cache/response', {
+      url,
+    }),
+    {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  if (response.status === 404) {
+    return undefined;
+  }
+
+  if (!response.ok) {
+    throw await buildDesktopDownloadRuntimeError(response);
+  }
+
+  return response;
+}
+
+export async function fetchDesktopDownloadCacheResponse(
+  url: string,
+  options: {
+    signal?: AbortSignal;
+  } = {}
+): Promise<Response> {
+  ensureDesktopLocalDownloadRuntime();
+  return localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/cache/fetch', {
+      url,
+    }),
+    {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
+      signal: options.signal,
+    }
+  );
+}
+
+export async function deleteDesktopDownloadCacheEntry(
+  url: string
+): Promise<boolean> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/cache/delete', {
+      url,
+    }),
+    {
+      method: 'DELETE',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  const payload = (await parseJsonResponse(response)) as {
+    deleted?: boolean;
+  };
+  return Boolean(payload.deleted);
+}
+
+export async function clearDesktopDownloadCache(): Promise<void> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/cache/all'),
+    {
+      method: 'DELETE',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  await parseJsonResponse(response);
+}
+
+export async function putDesktopResourceIndex(
+  record: ResourceIndexRecord
+): Promise<void> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/resource-index'),
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(record),
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  await parseJsonResponse(response);
+}
+
+export async function getDesktopResourceIndex(
+  id: string
+): Promise<ResourceIndexRecord | null> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/resource-index', {
+      id,
+    }),
+    {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<ResourceIndexRecord | null>(response);
+}
+
+export async function deleteDesktopResourceIndex(id: string): Promise<void> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/resource-index', {
+      id,
+    }),
+    {
+      method: 'DELETE',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  await parseJsonResponse(response);
+}
+
+export async function clearDesktopResourceIndexes(): Promise<void> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/resource-index/all'),
+    {
+      method: 'DELETE',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  await parseJsonResponse(response);
+}
+
+export async function getDesktopDownloadStoreSnapshot<T>(): Promise<T | null> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/store'),
+    {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<T | null>(response);
+}
+
+export async function putDesktopDownloadStoreSnapshot(
+  snapshot: unknown
+): Promise<void> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/store'),
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(snapshot),
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  await parseJsonResponse(response);
+}
+
+export async function clearDesktopDownloadStoreSnapshot(): Promise<void> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/store'),
+    {
+      method: 'DELETE',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  await parseJsonResponse(response);
+}
+
+export async function resolveDesktopDownloadManifest(
+  entryManifestUrls: string[],
+  options: {
+    signal?: AbortSignal;
+  } = {}
+): Promise<ManifestParseResult> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/manifest/resolve'),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        entryManifestUrls,
+      }),
+      cache: 'no-store',
+      credentials: 'omit',
+      signal: options.signal,
+    }
+  );
+
+  return parseJsonResponse<ManifestParseResult>(response);
+}
+
+export async function getDesktopDownloadEngineSnapshot(): Promise<DesktopDownloadEngineSnapshot> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/tasks'),
+    {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadEngineSnapshot>(response);
+}
+
+export async function getDesktopDownloadEngineTask(
+  taskId: string
+): Promise<DownloadTask | undefined> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl(`/tasks/${encodeURIComponent(taskId)}`),
+    {
+      method: 'GET',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  if (response.status === 404) {
+    return undefined;
+  }
+
+  return parseJsonResponse<DownloadTask>(response);
+}
+
+export async function clearDesktopDownloadEngineTasks(): Promise<DesktopDownloadEngineSnapshot> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/tasks'),
+    {
+      method: 'DELETE',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadEngineSnapshot>(response);
+}
+
+async function postDesktopDownloadTaskCommand(
+  taskId: string,
+  command: DesktopDownloadEngineBulkCommand
+): Promise<DesktopDownloadEngineSnapshot> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl(
+      `/tasks/${encodeURIComponent(taskId)}/${command}`
+    ),
+    {
+      method: 'POST',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadEngineSnapshot>(response);
+}
+
+function subscribeToDesktopDownloadEngineSnapshotsByPolling({
+  onSnapshot,
+  onError,
+}: DesktopDownloadEngineSnapshotSubscriptionOptions): () => void {
+  let active = true;
+  let nextPollTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const clearNextPollTimer = () => {
+    if (!nextPollTimer) {
+      return;
+    }
+
+    clearTimeout(nextPollTimer);
+    nextPollTimer = null;
+  };
+
+  const scheduleNextPoll = () => {
+    clearNextPollTimer();
+    if (!active) {
+      return;
+    }
+
+    nextPollTimer = setTimeout(() => {
+      void pollSnapshot();
+    }, DESKTOP_DOWNLOAD_RUNTIME_POLL_INTERVAL_MS);
+  };
+
+  const pollSnapshot = async () => {
+    try {
+      const snapshot = await getDesktopDownloadEngineSnapshot();
+      if (!active) {
+        return;
+      }
+
+      onSnapshot(snapshot);
+    } catch (error) {
+      if (!active) {
+        return;
+      }
+
+      onError?.(
+        error instanceof Error
+          ? error
+          : new Error('Desktop download runtime snapshot polling failed.')
+      );
+    } finally {
+      scheduleNextPoll();
+    }
+  };
+
+  void pollSnapshot();
+
+  return () => {
+    active = false;
+    clearNextPollTimer();
+  };
+}
+
+export function subscribeToDesktopDownloadEngineSnapshots({
+  onSnapshot,
+  onError,
+}: DesktopDownloadEngineSnapshotSubscriptionOptions): () => void {
+  ensureDesktopLocalDownloadRuntime();
+  return subscribeToDesktopDownloadEngineSnapshotsByPolling({
+    onSnapshot,
+    onError,
+  });
+}
+
+export async function putDesktopDownloadEngineSettings(
+  settings: DesktopDownloadEngineSettingsUpdate
+): Promise<DesktopDownloadEngineSnapshot> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/tasks/settings'),
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadEngineSnapshot>(response);
+}
+
+export async function postDesktopDownloadTask(
+  task: DownloadTask
+): Promise<DesktopDownloadEngineSnapshot> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/tasks'),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(task),
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadEngineSnapshot>(response);
+}
+
+export async function pauseDesktopDownloadTask(
+  taskId: string
+): Promise<DesktopDownloadEngineSnapshot> {
+  return postDesktopDownloadTaskCommand(taskId, 'pause');
+}
+
+export async function resumeDesktopDownloadTask(
+  taskId: string
+): Promise<DesktopDownloadEngineSnapshot> {
+  return postDesktopDownloadTaskCommand(taskId, 'resume');
+}
+
+export async function retryDesktopDownloadTask(
+  taskId: string
+): Promise<DesktopDownloadEngineSnapshot> {
+  return postDesktopDownloadTaskCommand(taskId, 'retry');
+}
+
+export async function cancelDesktopDownloadTask(
+  taskId: string
+): Promise<DesktopDownloadEngineSnapshot> {
+  return postDesktopDownloadTaskCommand(taskId, 'cancel');
+}
+
+export async function postDesktopDownloadTaskBulkCommand(
+  command: DesktopDownloadEngineBulkCommand,
+  taskIds: string[]
+): Promise<DesktopDownloadEngineSnapshot> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl('/tasks/bulk'),
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        command,
+        taskIds,
+      }),
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadEngineSnapshot>(response);
+}
+
+export async function deleteDesktopDownloadTask(
+  taskId: string
+): Promise<DesktopDownloadEngineSnapshot> {
+  ensureDesktopLocalDownloadRuntime();
+  const response = await localServiceFetch(
+    buildDesktopDownloadRuntimeUrl(`/tasks/${encodeURIComponent(taskId)}`),
+    {
+      method: 'DELETE',
+      cache: 'no-store',
+      credentials: 'omit',
+    }
+  );
+
+  return parseJsonResponse<DesktopDownloadEngineSnapshot>(response);
+}

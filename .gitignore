@@ -2,6 +2,12 @@
 **/node_modules
 /dist
 **/dist/
+.next
+.next-build
+.next-desktop
+out
 .env
 .env*.local
+*.tsbuildinfo
 .DS_Store
+.vercel

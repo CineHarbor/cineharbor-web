@@ -1,0 +1,155 @@
+module.exports = {
+  env: {
+    browser: true,
+    es2021: true,
+    node: true,
+  },
+  plugins: ['@typescript-eslint', 'simple-import-sort', 'unused-imports'],
+  extends: [
+    'eslint:recommended',
+    'next',
+    'next/core-web-vitals',
+    'plugin:@typescript-eslint/recommended',
+    'prettier',
+  ],
+  rules: {
+    'no-unused-vars': 'off',
+    'no-console': 'warn',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    'react/no-unescaped-entities': 'off',
+
+    'react/display-name': 'off',
+    'react/jsx-curly-brace-presence': [
+      'warn',
+      { props: 'never', children: 'never' },
+    ],
+
+    //#region  //*=========== Unused Import ===========
+    '@typescript-eslint/no-unused-vars': 'off',
+    'unused-imports/no-unused-imports': 'warn',
+    'unused-imports/no-unused-vars': [
+      'warn',
+      {
+        vars: 'all',
+        varsIgnorePattern: '^_',
+        args: 'after-used',
+        argsIgnorePattern: '^_',
+      },
+    ],
+    //#endregion  //*======== Unused Import ===========
+
+    //#region  //*=========== Import Sort ===========
+    'simple-import-sort/exports': 'warn',
+    'simple-import-sort/imports': [
+      'warn',
+      {
+        groups: [
+          // ext library & side effect imports
+          ['^@?\\w', '^\\u0000'],
+          // {s}css files
+          ['^.+\\.s?css$'],
+          // Lib and hooks
+          ['^@/lib', '^@/hooks'],
+          // static data
+          ['^@/data'],
+          // components
+          ['^@/components', '^@/container'],
+          // zustand store
+          ['^@/store'],
+          // Other imports
+          ['^@/'],
+          // relative paths up until 3 level
+          [
+            '^\\./?$',
+            '^\\.(?!/?$)',
+            '^\\.\\./?$',
+            '^\\.\\.(?!/?$)',
+            '^\\.\\./\\.\\./?$',
+            '^\\.\\./\\.\\.(?!/?$)',
+            '^\\.\\./\\.\\./\\.\\./?$',
+            '^\\.\\./\\.\\./\\.\\.(?!/?$)',
+          ],
+          ['^@/types'],
+          // other that didnt fit in
+          ['^'],
+        ],
+      },
+    ],
+    //#endregion  //*======== Import Sort ===========
+  },
+  overrides: [
+    {
+      files: ['src/app/**/*.{ts,tsx}', 'src/components/**/*.{ts,tsx}'],
+      excludedFiles: ['**/*.test.ts', '**/*.test.tsx'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            paths: [
+              {
+                name: '@/lib/download/manager',
+                message:
+                  'Use "@/lib/download/client" so desktop download execution can switch behind a stable UI boundary.',
+              },
+              {
+                name: '@/lib/playback-source-prefetch',
+                message:
+                  'Use "@/lib/playback-source-client" so desktop playback-source routing can switch behind a stable boundary.',
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      files: ['src/lib/download/**/*.{ts,tsx}'],
+      excludedFiles: ['**/*.test.ts', '**/*.test.tsx'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            paths: [
+              {
+                name: '@/lib/playback-source-prefetch',
+                message:
+                  'Use "@/lib/playback-source-client" so download flows do not depend on the legacy playback prefetch module directly.',
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      files: [
+        'src/app/play/page.tsx',
+        'src/components/DownloadsClient.tsx',
+        'src/components/SearchSuggestions.tsx',
+        'src/lib/download/downloadable.ts',
+        'src/lib/follow-updates.ts',
+      ],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            paths: [
+              {
+                name: '@/lib/transport/api-client',
+                message:
+                  'Use "@/lib/content-discovery-client" so content discovery requests stay behind a stable desktop/web boundary.',
+              },
+              {
+                name: '@/lib/transport/endpoint',
+                message:
+                  'Use "@/lib/content-discovery-client" so content discovery stream URLs stay behind a stable desktop/web boundary.',
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+  globals: {
+    React: true,
+    JSX: true,
+  },
+};

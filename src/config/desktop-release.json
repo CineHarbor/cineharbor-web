@@ -1,0 +1,7 @@
+{
+  "desktopVersion": "200.0.1",
+  "upstreamVersion": "100.1.3",
+  "releaseRepository": "jaytantech3000/CineHarbor",
+  "releaseBranch": "desktop",
+  "updaterBranch": "desktop-updater"
+}
