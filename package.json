@@ -6,6 +6,7 @@
     "dev": "pnpm gen:manifest && next dev -H 0.0.0.0",
     "dev:pwa": "ENABLE_PWA_DEV=true pnpm dev",
     "build": "pnpm gen:manifest && next build",
+    "build:desktop:frontend": "node scripts/build-desktop-frontend.mjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit --incremental false",

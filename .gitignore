@@ -6,6 +6,8 @@
 .next-build
 .next-desktop
 out
+/desktop-shell-dist
+/.desktop-build-temp
 .env
 .env*.local
 *.tsbuildinfo
