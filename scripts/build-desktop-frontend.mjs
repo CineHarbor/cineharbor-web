@@ -30,9 +30,6 @@ const desktopEnv = {
 };
 
 const temporarilyMovedPaths = [];
-// pnpm ships as a .cmd shim on Windows; execFileSync() (no shell) only resolves
-// real executables, so address the shim explicitly there.
-const pnpmBin = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 
 function moveAside(relativePath, tempName) {
   const sourcePath = join(projectRoot, relativePath);
@@ -63,15 +60,17 @@ try {
   rmSync(desktopDistDir, { force: true, recursive: true });
   rmSync(outputDir, { force: true, recursive: true });
 
-  execFileSync(pnpmBin, ['gen:manifest'], {
+  execFileSync('pnpm', ['gen:manifest'], {
     cwd: projectRoot,
     env: desktopEnv,
     stdio: 'inherit',
+    shell: true,
   });
-  execFileSync(pnpmBin, ['exec', 'next', 'build'], {
+  execFileSync('pnpm', ['exec', 'next', 'build'], {
     cwd: projectRoot,
     env: desktopEnv,
     stdio: 'inherit',
+    shell: true,
   });
 
   if (!existsSync(join(desktopDistDir, 'index.html'))) {
