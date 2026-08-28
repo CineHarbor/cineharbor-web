@@ -74,13 +74,13 @@ const CapsuleSwitch: React.FC<CapsuleSwitchProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative inline-flex rounded-full border border-white/8 bg-[var(--luna-seg-fill)] p-[0.28rem] shadow-[0_16px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl ${
+      className={`relative inline-flex rounded-full border border-white/8 bg-[var(--ch-seg-fill)] p-[0.28rem] shadow-[0_16px_32px_rgba(0,0,0,0.12)] backdrop-blur-2xl ${
         className || ''
       }`}
     >
       {indicatorStyle.width > 0 ? (
         <div
-          className='absolute bottom-[0.28rem] top-[0.28rem] rounded-full bg-[var(--luna-seg-pill)] shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_18px_rgba(0,0,0,0.08)] transition-all duration-200 ease-out'
+          className='absolute bottom-[0.28rem] top-[0.28rem] rounded-full bg-[var(--ch-seg-pill)] shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_8px_18px_rgba(0,0,0,0.08)] transition-all duration-200 ease-out'
           style={{
             left: `${indicatorStyle.left}px`,
             width: `${indicatorStyle.width}px`,
@@ -100,8 +100,8 @@ const CapsuleSwitch: React.FC<CapsuleSwitchProps> = ({
             onClick={() => onChange(opt.value)}
             className={`relative z-10 min-w-[4.45rem] rounded-full px-[1.02rem] py-[0.58rem] text-[0.92rem] font-semibold tracking-[0.01em] transition-colors duration-200 sm:min-w-[5.1rem] ${
               isActive
-                ? 'text-[var(--luna-seg-text-active)]'
-                : 'text-[var(--luna-seg-text)] hover:text-[var(--luna-seg-text-active)]'
+                ? 'text-[var(--ch-seg-text-active)]'
+                : 'text-[var(--ch-seg-text)] hover:text-[var(--ch-seg-text-active)]'
             }`}
           >
             {opt.label}

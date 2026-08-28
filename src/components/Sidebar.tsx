@@ -59,7 +59,7 @@ const Logo = () => {
       href='/'
       className='flex h-14 items-center px-3 select-none transition-opacity duration-200 hover:opacity-85'
     >
-      <span className='luna-sidebar-wordmark truncate'>{siteName}</span>
+      <span className='ch-sidebar-wordmark truncate'>{siteName}</span>
     </Link>
   );
 };
@@ -369,12 +369,12 @@ const Sidebar = ({ onToggle, activePath }: SidebarProps) => {
 
   const sidebarWidthClass = isCollapsed ? 'w-[5.4rem]' : 'w-[17rem]';
   const sidebarSpacerClass = isCollapsed ? 'w-[6.4rem]' : 'w-[18rem]';
-  const navItemClassName = `luna-sidebar-link ${
+  const navItemClassName = `ch-sidebar-link ${
     isCollapsed ? 'justify-center px-0' : 'px-[0.88rem]'
   } py-[0.72rem]`;
   const navLabelClassName =
     'whitespace-nowrap text-[14px] font-medium tracking-[0.01em]';
-  const navIconClassName = 'luna-sidebar-icon h-[1rem] w-[1rem]';
+  const navIconClassName = 'ch-sidebar-icon h-[1rem] w-[1rem]';
 
   const renderNavItem = (item: NavItem) => {
     const Icon = item.icon;
@@ -411,7 +411,7 @@ const Sidebar = ({ onToggle, activePath }: SidebarProps) => {
           data-sidebar
           className={`fixed bottom-4 left-4 top-4 z-20 transition-all duration-300 ${sidebarWidthClass}`}
         >
-          <div className='luna-sidebar-shell flex h-full flex-col rounded-[2rem] px-4 py-5'>
+          <div className='ch-sidebar-shell flex h-full flex-col rounded-[2rem] px-4 py-5'>
             <div className='relative h-14'>
               <div
                 className={`absolute inset-y-0 left-0 right-12 flex items-center transition-opacity duration-200 ${
@@ -422,7 +422,7 @@ const Sidebar = ({ onToggle, activePath }: SidebarProps) => {
               </div>
               <button
                 onClick={handleToggle}
-                className={`luna-sidebar-toggle absolute top-1/2 z-10 -translate-y-1/2 ${
+                className={`ch-sidebar-toggle absolute top-1/2 z-10 -translate-y-1/2 ${
                   isCollapsed ? 'left-1/2 -translate-x-1/2' : 'right-2'
                 }`}
                 aria-label={isCollapsed ? '展开侧边栏' : '折叠侧边栏'}

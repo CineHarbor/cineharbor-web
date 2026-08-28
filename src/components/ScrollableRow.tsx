@@ -120,7 +120,7 @@ export default function ScrollableRow({
         >
           <button
             onClick={handleScrollLeftClick}
-            className='luna-scroll-arrow pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-200 hover:-translate-x-0.5'
+            className='ch-scroll-arrow pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-200 hover:-translate-x-0.5'
             aria-label='向左滚动'
           >
             <ChevronLeft className='h-5 w-5' />
@@ -135,12 +135,12 @@ export default function ScrollableRow({
           }`}
         >
           <div className='absolute bottom-4 top-4 right-5 w-4'>
-            <div className='luna-scroll-track absolute bottom-0 left-1/2 top-0 w-[3px] -translate-x-1/2 rounded-full opacity-85' />
-            <div className='luna-scroll-thumb absolute left-1/2 top-[18%] h-[34%] w-[3px] -translate-x-1/2 rounded-full' />
+            <div className='ch-scroll-track absolute bottom-0 left-1/2 top-0 w-[3px] -translate-x-1/2 rounded-full opacity-85' />
+            <div className='ch-scroll-thumb absolute left-1/2 top-[18%] h-[34%] w-[3px] -translate-x-1/2 rounded-full' />
           </div>
           <button
             onClick={handleScrollRightClick}
-            className='luna-scroll-arrow pointer-events-auto relative right-0.5 flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-200 hover:translate-x-0.5'
+            className='ch-scroll-arrow pointer-events-auto relative right-0.5 flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-200 hover:translate-x-0.5'
             aria-label='向右滚动'
           >
             <ChevronRight className='h-[1.05rem] w-[1.05rem]' />

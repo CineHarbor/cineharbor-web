@@ -1342,21 +1342,21 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
         remainingCount: Math.max(0, sortedSources.length - maxDisplayCount),
       };
     }, [dynamicSourceNames, isAggregate]);
-    const cardShellClassName = 'luna-card-shell rounded-[0.9rem] p-0';
-    const posterClassName = `luna-card-poster relative aspect-[2/3] overflow-hidden rounded-[0.9rem] ${
+    const cardShellClassName = 'ch-card-shell rounded-[0.9rem] p-0';
+    const posterClassName = `ch-card-poster relative aspect-[2/3] overflow-hidden rounded-[0.9rem] ${
       origin === 'live' ? 'ring-1 ring-white/20 dark:ring-sky-200/15' : ''
     }`;
     const posterImageClassName =
       origin === 'live'
         ? 'object-contain p-4 sm:p-5'
-        : 'luna-card-poster-media object-cover';
-    const posterOverlayClassName = `luna-card-poster-overlay absolute inset-0 transition-opacity duration-200 ease-out ${
+        : 'ch-card-poster-media object-cover';
+    const posterOverlayClassName = `ch-card-poster-overlay absolute inset-0 transition-opacity duration-200 ease-out ${
       isNavigating ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'
     }`;
-    const infoPanelClassName = `luna-card-info ${
+    const infoPanelClassName = `ch-card-info ${
       hasMetadata
-        ? 'luna-card-info--with-metadata'
-        : 'luna-card-info--title-only'
+        ? 'ch-card-info--with-metadata'
+        : 'ch-card-info--title-only'
     }`;
     const nonSelectableStyle: React.CSSProperties = {
       WebkitUserSelect: 'none',
@@ -1438,7 +1438,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
               }}
             />
 
-            <div className='pointer-events-none absolute inset-0 luna-card-poster-sheen' />
+            <div className='pointer-events-none absolute inset-0 ch-card-poster-sheen' />
 
             {isNavigating ? (
               <div className='absolute inset-0 z-30 flex items-center justify-center bg-black/45 backdrop-blur-[1px]'>
@@ -1468,7 +1468,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   return false;
                 }}
               >
-                <div className='luna-card-action luna-card-action--play flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full sm:h-[3.9rem] sm:w-[3.9rem]'>
+                <div className='ch-card-action ch-card-action--play flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full sm:h-[3.9rem] sm:w-[3.9rem]'>
                   <Play
                     size={20}
                     strokeWidth={2.35}
@@ -1485,7 +1485,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
 
             {showYearBadge ? (
               <div
-                className='luna-chip luna-chip--ghost absolute left-3 top-3 z-20 min-h-0 px-2.5 py-1 text-[0.68rem] font-semibold'
+                className='ch-chip ch-chip--ghost absolute left-3 top-3 z-20 min-h-0 px-2.5 py-1 text-[0.68rem] font-semibold'
                 style={nonSelectableStyle}
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -1502,19 +1502,19 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 style={nonSelectableStyle}
               >
                 {showRatingBadge ? (
-                  <div className='luna-card-badge luna-card-badge--score'>
+                  <div className='ch-card-badge ch-card-badge--score'>
                     {rate}
                   </div>
                 ) : null}
                 {showEpisodesBadge ? (
-                  <div className='luna-card-badge luna-card-badge--accent'>
+                  <div className='ch-card-badge ch-card-badge--accent'>
                     {currentEpisode
                       ? `${currentEpisode}/${actualEpisodes}`
                       : actualEpisodes}
                   </div>
                 ) : null}
                 {hasFollowNewEpisodes ? (
-                  <div className='luna-card-badge luna-card-badge--warning'>
+                  <div className='ch-card-badge ch-card-badge--warning'>
                     NEW
                   </div>
                 ) : null}
@@ -1540,7 +1540,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   return false;
                 }}
               >
-                <div className='luna-card-action flex h-8 w-8 items-center justify-center rounded-full text-[var(--luna-card-text)]'>
+                <div className='ch-card-action flex h-8 w-8 items-center justify-center rounded-full text-[var(--ch-card-text)]'>
                   <Link
                     size={16}
                     style={{
@@ -1562,11 +1562,11 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                 }}
               >
                 <div className='relative group/sources'>
-                  <div className='luna-card-action flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-xs font-bold text-[var(--luna-card-text)]'>
+                  <div className='ch-card-action flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-xs font-bold text-[var(--ch-card-text)]'>
                     {aggregateSourceSummary.count}
                   </div>
                   <div className='pointer-events-none invisible absolute bottom-full right-0 z-50 mb-2 opacity-0 transition-all duration-200 ease-out delay-100 group-hover/sources:visible group-hover/sources:opacity-100'>
-                    <div className='luna-popover min-w-[100px] max-w-[140px] overflow-hidden rounded-[1rem] border border-[var(--luna-popover-border)] p-1.5 text-xs text-[var(--luna-card-text)] shadow-xl sm:min-w-[120px] sm:max-w-[200px] sm:p-2'>
+                    <div className='ch-popover min-w-[100px] max-w-[140px] overflow-hidden rounded-[1rem] border border-[var(--ch-popover-border)] p-1.5 text-xs text-[var(--ch-card-text)] shadow-xl sm:min-w-[120px] sm:max-w-[200px] sm:p-2'>
                       <div className='space-y-0.5 sm:space-y-1'>
                         {aggregateSourceSummary.displaySources.map(
                           (sourceName, index) => (
@@ -1574,7 +1574,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                               key={index}
                               className='flex items-center gap-1 sm:gap-1.5'
                             >
-                              <div className='h-0.5 w-0.5 flex-shrink-0 rounded-full bg-[var(--luna-accent)] sm:h-1 sm:w-1' />
+                              <div className='h-0.5 w-0.5 flex-shrink-0 rounded-full bg-[var(--ch-accent)] sm:h-1 sm:w-1' />
                               <span
                                 className='truncate text-[10px] leading-tight sm:text-xs'
                                 title={sourceName}
@@ -1588,7 +1588,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
 
                       {aggregateSourceSummary.hasMore ? (
                         <div className='mt-1 border-t border-white/10 pt-1 sm:mt-2 sm:pt-1.5'>
-                          <div className='flex items-center justify-center text-[var(--luna-card-muted)]'>
+                          <div className='flex items-center justify-center text-[var(--ch-card-muted)]'>
                             <span className='text-[10px] font-medium sm:text-xs'>
                               +{aggregateSourceSummary.remainingCount} 播放源
                             </span>
@@ -1622,7 +1622,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   >
                     <Trash2
                       size={15}
-                      className='text-[var(--luna-card-text)]'
+                      className='text-[var(--ch-card-text)]'
                     />
                   </button>
                 ) : null}
@@ -1638,7 +1638,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                       className={`transition-colors duration-200 ${
                         favorited
                           ? 'fill-rose-500 stroke-rose-500'
-                          : 'fill-transparent text-[var(--luna-card-text)] hover:text-rose-300'
+                          : 'fill-transparent text-[var(--ch-card-text)] hover:text-rose-300'
                       }`}
                     />
                   </button>
@@ -1655,10 +1655,10 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
               }}
             >
               <div className='relative min-w-0'>
-                <span className='luna-card-title peer block truncate transition-colors duration-200 ease-out group-hover:text-white'>
+                <span className='ch-card-title peer block truncate transition-colors duration-200 ease-out group-hover:text-white'>
                   {actualTitle}
                 </span>
-                <div className='luna-popover pointer-events-none absolute bottom-full left-1/2 mb-2 invisible -translate-x-1/2 whitespace-nowrap rounded-[0.9rem] px-3 py-1 text-xs text-[var(--luna-card-text)] opacity-0 transition-all duration-200 ease-out delay-100 peer-hover:visible peer-hover:opacity-100'>
+                <div className='ch-popover pointer-events-none absolute bottom-full left-1/2 mb-2 invisible -translate-x-1/2 whitespace-nowrap rounded-[0.9rem] px-3 py-1 text-xs text-[var(--ch-card-text)] opacity-0 transition-all duration-200 ease-out delay-100 peer-hover:visible peer-hover:opacity-100'>
                   {actualTitle}
                   <div className='absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-white/10' />
                 </div>
@@ -1673,11 +1673,11 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                   {metadataItems.map((item) => (
                     <span
                       key={item.key}
-                      className={`luna-chip ${
+                      className={`ch-chip ${
                         item.tone === 'accent'
-                          ? 'luna-chip--accent'
+                          ? 'ch-chip--accent'
                           : item.tone === 'neutral'
-                          ? 'luna-chip--neutral'
+                          ? 'ch-chip--neutral'
                           : ''
                       }`}
                     >
@@ -1690,9 +1690,9 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
             </div>
 
             {progress !== undefined ? (
-              <div className='luna-card-progress-track absolute bottom-0 left-0 right-0 z-30'>
+              <div className='ch-card-progress-track absolute bottom-0 left-0 right-0 z-30'>
                 <div
-                  className='luna-card-progress-fill h-full'
+                  className='ch-card-progress-fill h-full'
                   style={{ width: `${Math.max(0, Math.min(progress, 100))}%` }}
                 />
               </div>

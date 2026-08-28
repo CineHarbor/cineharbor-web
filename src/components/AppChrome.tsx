@@ -122,7 +122,7 @@ export function AppSurfaceCard({ className, ...props }: DivProps) {
   return (
     <div
       className={cn(
-        'rounded-[1.5rem] border border-[var(--luna-card-border)] bg-[var(--luna-card-fill)] shadow-[var(--luna-card-shadow)] backdrop-blur-2xl',
+        'rounded-[1.5rem] border border-[var(--ch-card-border)] bg-[var(--ch-card-fill)] shadow-[var(--ch-card-shadow)] backdrop-blur-2xl',
         className
       )}
       {...props}

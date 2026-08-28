@@ -101,8 +101,8 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'default' }) => {
   const [mounted, setMounted] = useState(false);
   const isGhost = variant === 'ghost';
   const buttonClassName = isGhost
-    ? 'luna-toolbar-button luna-toolbar-button--ghost'
-    : 'luna-toolbar-button';
+    ? 'ch-toolbar-button ch-toolbar-button--ghost'
+    : 'ch-toolbar-button';
   const iconClassName = isGhost ? 'h-[1.26rem] w-[1.26rem]' : 'w-full h-full';
 
   // Body 滚动锁定 - 使用 overflow 方式避免布局问题
@@ -512,12 +512,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'default' }) => {
       />
 
       {/* 菜单面板 */}
-      <div className='luna-popover fixed right-4 top-16 z-[1001] w-60 overflow-hidden rounded-[1.5rem] select-none'>
+      <div className='ch-popover fixed right-4 top-16 z-[1001] w-60 overflow-hidden rounded-[1.5rem] select-none'>
         {/* 用户信息区域 */}
-        <div className='border-b border-[var(--luna-popover-border)] bg-white/10 px-4 py-3 dark:bg-white/5'>
+        <div className='border-b border-[var(--ch-popover-border)] bg-white/10 px-4 py-3 dark:bg-white/5'>
           <div className='space-y-1'>
             <div className='flex items-center justify-between'>
-              <span className='text-xs font-medium uppercase tracking-wider text-[var(--luna-copy-muted)]'>
+              <span className='text-xs font-medium uppercase tracking-wider text-[var(--ch-copy-muted)]'>
                 当前用户
               </span>
               <span
@@ -537,7 +537,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'default' }) => {
               </span>
             </div>
             <div className='flex items-center justify-between'>
-              <div className='truncate text-sm font-semibold text-[var(--luna-copy-strong)]'>
+              <div className='truncate text-sm font-semibold text-[var(--ch-copy-strong)]'>
                 {authInfo?.username || '访客'}
               </div>
             </div>
@@ -556,7 +556,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ variant = 'default' }) => {
             !desktopProfileSyncEnabled &&
             desktopAuthRequired &&
             desktopAuthUsername ? (
-              <div className='text-[11px] text-[var(--luna-copy-muted)]'>
+              <div className='text-[11px] text-[var(--ch-copy-muted)]'>
                 本地管理账号：{desktopAuthUsername}
               </div>
             ) : null}

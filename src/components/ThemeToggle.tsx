@@ -17,8 +17,8 @@ export function ThemeToggle({ variant = 'default' }: ThemeToggleProps) {
   const pathname = usePathname();
   const buttonClassName =
     variant === 'ghost'
-      ? 'luna-toolbar-button luna-toolbar-button--ghost'
-      : 'luna-toolbar-button';
+      ? 'ch-toolbar-button ch-toolbar-button--ghost'
+      : 'ch-toolbar-button';
   const iconClassName = 'h-[1.26rem] w-[1.26rem]';
 
   const setThemeColor = (theme?: string) => {

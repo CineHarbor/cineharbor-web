@@ -25,11 +25,11 @@ function ensureStringArray(value: any[]): string[] {
 }
 
 type GlobalWithUpstashRedis = typeof globalThis & {
-  __MOONTV_UPSTASH_REDIS_CLIENT__?: Redis;
+  __CINEHARBOR_UPSTASH_REDIS_CLIENT__?: Redis;
 };
 
 const upstashGlobal = globalThis as GlobalWithUpstashRedis;
-let upstashRedisClient = upstashGlobal.__MOONTV_UPSTASH_REDIS_CLIENT__;
+let upstashRedisClient = upstashGlobal.__CINEHARBOR_UPSTASH_REDIS_CLIENT__;
 
 // 添加Upstash Redis操作重试包装器
 async function withRetry<T>(
@@ -589,7 +589,7 @@ export class UpstashRedisStorage implements IStorage {
 function getUpstashRedisClient(): Redis {
   if (!upstashRedisClient) {
     upstashRedisClient = createUpstashRedisClient();
-    upstashGlobal.__MOONTV_UPSTASH_REDIS_CLIENT__ = upstashRedisClient;
+    upstashGlobal.__CINEHARBOR_UPSTASH_REDIS_CLIENT__ = upstashRedisClient;
   }
 
   return upstashRedisClient;

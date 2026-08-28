@@ -469,7 +469,7 @@ describe('VideoCard', () => {
       'utf8'
     );
     const titleOnlyRule = stylesheet.match(
-      /\.luna-card-info--title-only\s*\{([^}]*)\}/
+      /\.ch-card-info--title-only\s*\{([^}]*)\}/
     )?.[1];
 
     expect(titleOnlyRule).toContain('padding-bottom: 0.68rem');
@@ -480,13 +480,13 @@ describe('VideoCard', () => {
       <VideoCard from='douban' title='只有标题的视频' />
     );
 
-    const infoPanel = container.querySelector('.luna-card-info');
+    const infoPanel = container.querySelector('.ch-card-info');
 
     expect(infoPanel).toContainElement(
-      screen.getByText('只有标题的视频', { selector: '.luna-card-title' })
+      screen.getByText('只有标题的视频', { selector: '.ch-card-title' })
     );
-    expect(infoPanel).toHaveClass('luna-card-info--title-only');
-    expect(infoPanel?.querySelectorAll('.luna-chip')).toHaveLength(0);
+    expect(infoPanel).toHaveClass('ch-card-info--title-only');
+    expect(infoPanel?.querySelectorAll('.ch-chip')).toHaveLength(0);
   });
 
   it('uses the metadata information-panel modifier for a stable type chip', () => {
@@ -494,11 +494,11 @@ describe('VideoCard', () => {
       <VideoCard from='douban' title='电影视频' type='movie' />
     );
 
-    const infoPanel = container.querySelector('.luna-card-info');
+    const infoPanel = container.querySelector('.ch-card-info');
 
     expect(screen.getByText('电影')).toBeInTheDocument();
-    expect(infoPanel).toHaveClass('luna-card-info--with-metadata');
-    expect(infoPanel?.querySelectorAll('.luna-chip')).toHaveLength(1);
+    expect(infoPanel).toHaveClass('ch-card-info--with-metadata');
+    expect(infoPanel?.querySelectorAll('.ch-chip')).toHaveLength(1);
   });
 
   it('keeps source and type chips visible when the card context enables source metadata', () => {
@@ -515,13 +515,13 @@ describe('VideoCard', () => {
       />
     );
 
-    const infoPanel = container.querySelector('.luna-card-info');
+    const infoPanel = container.querySelector('.ch-card-info');
 
     expect(screen.getByText('测试源')).toBeInTheDocument();
     expect(screen.getByText('电影')).toBeInTheDocument();
     expect(screen.getByText('离线')).toBeInTheDocument();
-    expect(infoPanel).toHaveClass('luna-card-info--with-metadata');
-    expect(infoPanel?.querySelectorAll('.luna-chip')).toHaveLength(3);
+    expect(infoPanel).toHaveClass('ch-card-info--with-metadata');
+    expect(infoPanel?.querySelectorAll('.ch-chip')).toHaveLength(3);
     expect(screen.queryByText('敬请期待')).not.toBeInTheDocument();
   });
 });

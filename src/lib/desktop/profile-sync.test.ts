@@ -102,7 +102,7 @@ describe('desktop profile sync helpers', () => {
 
   it('posts the onboarding preview request through the desktop local service', async () => {
     const payload = {
-      remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+      remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
       currentRemoteUsername: 'remote-owner',
       currentRemoteRole: 'owner',
       plan: {
@@ -120,7 +120,7 @@ describe('desktop profile sync helpers', () => {
       warnings: [],
     };
     const requestPayload = {
-      remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+      remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
       username: 'remote-owner',
       password: 'secret',
       currentLocalUsername: 'admin',
@@ -191,7 +191,7 @@ describe('desktop profile sync helpers', () => {
 
   it('surfaces onboarding execute errors returned by the local service', async () => {
     const requestPayload = {
-      remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+      remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
       username: 'remote-owner',
       password: 'secret',
       currentLocalUsername: 'admin',

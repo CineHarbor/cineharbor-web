@@ -40,7 +40,7 @@ import {
   AppSurfaceCard,
 } from '@/components/AppChrome';
 
-const DEFAULT_DESKTOP_PROFILE_SYNC_API_BASE_URL = 'https://luna.hkcu.qzz.io';
+const DEFAULT_DESKTOP_PROFILE_SYNC_API_BASE_URL = 'https://cineharbor.hkcu.qzz.io';
 const ERROR_COPY_RESET_DELAY_MS = 2000;
 const RUNTIME_REFRESH_COMPLETED_RESET_DELAY_MS = 1500;
 

@@ -40,9 +40,9 @@ export default function GlobalRatingFilterControl({
   const isGhost = variant === 'ghost';
   const buttonClassName = `relative ${
     isGhost
-      ? 'luna-toolbar-button luna-toolbar-button--ghost'
-      : 'luna-toolbar-button'
-  } ${enabled ? 'text-[var(--luna-accent)]' : ''}`;
+      ? 'ch-toolbar-button ch-toolbar-button--ghost'
+      : 'ch-toolbar-button'
+  } ${enabled ? 'text-[var(--ch-accent)]' : ''}`;
   const iconClassName = isGhost ? 'h-[1.24rem] w-[1.24rem]' : 'h-full w-full';
 
   useEffect(() => {
@@ -117,32 +117,32 @@ export default function GlobalRatingFilterControl({
       </button>
 
       {isOpen ? (
-        <div className='luna-popover absolute right-0 top-full z-[1200] mt-3 w-72 rounded-[1.75rem] p-4 text-[var(--luna-copy-strong)]'>
+        <div className='ch-popover absolute right-0 top-full z-[1200] mt-3 w-72 rounded-[1.75rem] p-4 text-[var(--ch-copy-strong)]'>
           <div className='flex items-start justify-between gap-3'>
             <div>
-              <p className='text-sm font-semibold text-[var(--luna-copy-strong)]'>
+              <p className='text-sm font-semibold text-[var(--ch-copy-strong)]'>
                 评分过滤
               </p>
-              <p className='mt-1 text-xs text-[var(--luna-copy-muted)]'>
+              <p className='mt-1 text-xs text-[var(--ch-copy-muted)]'>
                 低于指定分数的已评分内容将被隐藏
               </p>
             </div>
             <button
               type='button'
               onClick={() => setIsOpen(false)}
-              className='luna-toolbar-button h-8 w-8 p-1 text-[var(--luna-copy-muted)]'
+              className='ch-toolbar-button h-8 w-8 p-1 text-[var(--ch-copy-muted)]'
               aria-label='关闭评分过滤器'
             >
               <X className='h-4 w-4' />
             </button>
           </div>
 
-          <div className='mt-4 flex items-center justify-between rounded-[1.25rem] border border-[var(--luna-card-border)] bg-[var(--luna-card-fill)] px-3 py-3'>
+          <div className='mt-4 flex items-center justify-between rounded-[1.25rem] border border-[var(--ch-card-border)] bg-[var(--ch-card-fill)] px-3 py-3'>
             <div>
-              <p className='text-sm font-medium text-[var(--luna-copy-strong)]'>
+              <p className='text-sm font-medium text-[var(--ch-copy-strong)]'>
                 启用过滤
               </p>
-              <p className='mt-1 text-xs text-[var(--luna-copy-muted)]'>
+              <p className='mt-1 text-xs text-[var(--ch-copy-muted)]'>
                 当前阈值 {formatRating(minimumRating)}
               </p>
             </div>
@@ -153,13 +153,13 @@ export default function GlobalRatingFilterControl({
                 checked={enabled}
                 onChange={(event) => setEnabled(event.target.checked)}
               />
-              <span className='h-6 w-11 rounded-full bg-white/30 transition-colors peer-checked:bg-[var(--luna-accent)] dark:bg-white/10' />
+              <span className='h-6 w-11 rounded-full bg-white/30 transition-colors peer-checked:bg-[var(--ch-accent)] dark:bg-white/10' />
               <span className='absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform peer-checked:translate-x-5' />
             </label>
           </div>
 
           <div className='mt-4 space-y-3'>
-            <div className='flex items-center justify-between text-xs text-[var(--luna-copy-muted)]'>
+            <div className='flex items-center justify-between text-xs text-[var(--ch-copy-muted)]'>
               <span>最低评分</span>
               <span>{formatRating(minimumRating)}</span>
             </div>
@@ -174,7 +174,7 @@ export default function GlobalRatingFilterControl({
                 setMinimumRating(Number.parseFloat(event.target.value))
               }
               disabled={!enabled}
-              className='h-2 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-[var(--luna-accent)] disabled:cursor-not-allowed disabled:opacity-50'
+              className='h-2 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-[var(--ch-accent)] disabled:cursor-not-allowed disabled:opacity-50'
             />
 
             <div className='flex items-center gap-2'>
@@ -193,13 +193,13 @@ export default function GlobalRatingFilterControl({
                     applyDraftRating();
                   }
                 }}
-                className='h-10 w-full rounded-[1rem] border border-[var(--luna-card-border)] bg-white/50 px-3 text-sm text-[var(--luna-copy-strong)] outline-none transition-colors focus:border-[var(--luna-accent)] focus:ring-2 focus:ring-[var(--luna-accent-soft)] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-[var(--luna-copy-muted)] dark:bg-black/20'
+                className='h-10 w-full rounded-[1rem] border border-[var(--ch-card-border)] bg-white/50 px-3 text-sm text-[var(--ch-copy-strong)] outline-none transition-colors focus:border-[var(--ch-accent)] focus:ring-2 focus:ring-[var(--ch-accent-soft)] disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-[var(--ch-copy-muted)] dark:bg-black/20'
               />
               <button
                 type='button'
                 onClick={applyDraftRating}
                 disabled={!enabled}
-                className='h-10 shrink-0 rounded-[1rem] bg-[var(--luna-accent)] px-3 text-sm font-medium text-white transition-colors hover:opacity-95 disabled:cursor-not-allowed disabled:bg-white/20'
+                className='h-10 shrink-0 rounded-[1rem] bg-[var(--ch-accent)] px-3 text-sm font-medium text-white transition-colors hover:opacity-95 disabled:cursor-not-allowed disabled:bg-white/20'
               >
                 应用
               </button>
@@ -217,8 +217,8 @@ export default function GlobalRatingFilterControl({
                   disabled={!enabled}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     minimumRating === presetRating
-                      ? 'bg-[var(--luna-accent)] text-white'
-                      : 'bg-white/20 text-[var(--luna-copy-muted)] hover:bg-white/30'
+                      ? 'bg-[var(--ch-accent)] text-white'
+                      : 'bg-white/20 text-[var(--ch-copy-muted)] hover:bg-white/30'
                   } disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   {formatRating(presetRating)}
@@ -226,7 +226,7 @@ export default function GlobalRatingFilterControl({
               ))}
             </div>
 
-            <p className='text-xs leading-5 text-[var(--luna-copy-muted)]'>
+            <p className='text-xs leading-5 text-[var(--ch-copy-muted)]'>
               未评分内容会保留显示，只过滤已存在评分的卡片。
             </p>
           </div>

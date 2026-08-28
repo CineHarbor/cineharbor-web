@@ -65,7 +65,7 @@ describe('DesktopProfileSyncOnboardingCard', () => {
 
   it('opens the onboarding dialog and renders the preview guidance', async () => {
     mockPreviewDesktopProfileSyncOnboarding.mockResolvedValue({
-      remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+      remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
       currentRemoteUsername: 'remote-owner',
       currentRemoteRole: 'owner',
       plan: {
@@ -124,7 +124,7 @@ describe('DesktopProfileSyncOnboardingCard', () => {
     fireEvent.click(screen.getByRole('button', { name: '开启同步' }));
 
     expect(screen.getByLabelText('Web 服务地址')).toHaveValue(
-      'https://luna.hkcu.qzz.io'
+      'https://cineharbor.hkcu.qzz.io'
     );
 
     fireEvent.change(screen.getByLabelText('Web 用户名'), {
@@ -137,7 +137,7 @@ describe('DesktopProfileSyncOnboardingCard', () => {
 
     await waitFor(() => {
       expect(mockPreviewDesktopProfileSyncOnboarding).toHaveBeenCalledWith({
-        remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+        remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
         username: 'remote-owner',
         password: 'secret',
         currentLocalUsername: 'admin',
@@ -157,7 +157,7 @@ describe('DesktopProfileSyncOnboardingCard', () => {
 
   it('lets a desktop guest submit Web credentials without a browser local username', async () => {
     mockPreviewDesktopProfileSyncOnboarding.mockResolvedValue({
-      remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+      remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
       currentRemoteUsername: 'remote-owner',
       currentRemoteRole: 'owner',
       plan: {
@@ -193,7 +193,7 @@ describe('DesktopProfileSyncOnboardingCard', () => {
 
     await waitFor(() => {
       expect(mockPreviewDesktopProfileSyncOnboarding).toHaveBeenCalledWith({
-        remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+        remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
         username: 'remote-owner',
         password: 'secret',
         currentLocalUsername: 'admin',
@@ -203,7 +203,7 @@ describe('DesktopProfileSyncOnboardingCard', () => {
 
   it('executes onboarding with the selected sync domains and surfaces the success dialog', async () => {
     mockPreviewDesktopProfileSyncOnboarding.mockResolvedValue({
-      remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+      remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
       currentRemoteUsername: 'remote-owner',
       currentRemoteRole: 'owner',
       plan: {
@@ -235,7 +235,7 @@ describe('DesktopProfileSyncOnboardingCard', () => {
       warnings: [],
     });
     mockExecuteDesktopProfileSyncOnboarding.mockResolvedValue({
-      remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+      remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
       currentRemoteUsername: 'remote-owner',
       currentRemoteRole: 'owner',
       createdAccounts: [
@@ -308,7 +308,7 @@ describe('DesktopProfileSyncOnboardingCard', () => {
 
     await waitFor(() => {
       expect(mockExecuteDesktopProfileSyncOnboarding).toHaveBeenCalledWith({
-        remoteBaseUrl: 'https://luna.hkcu.qzz.io',
+        remoteBaseUrl: 'https://cineharbor.hkcu.qzz.io',
         username: 'remote-owner',
         password: 'secret',
         currentLocalUsername: 'admin',

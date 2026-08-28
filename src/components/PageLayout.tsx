@@ -20,7 +20,7 @@ const PageLayout = ({ children, activePath = '/' }: PageLayoutProps) => {
 
   return (
     <NavigationFeedbackProvider>
-      <div className='luna-desktop-shell w-full min-h-screen overflow-x-hidden'>
+      <div className='ch-desktop-shell w-full min-h-screen overflow-x-hidden'>
         <DownloadSessionSync />
         <DesktopDownloadStoreSync />
         <FollowUpdatesSync />
@@ -32,15 +32,15 @@ const PageLayout = ({ children, activePath = '/' }: PageLayoutProps) => {
           aria-hidden='true'
           className='pointer-events-none fixed inset-0 z-0 hidden md:block'
         >
-          <div className='luna-backdrop-cover' />
-          <div className='luna-backdrop-sky' />
-          <div className='luna-backdrop-glow' />
-          <div className='luna-backdrop-glow-secondary' />
-          <div className='luna-backdrop-landscape' />
-          <div className='luna-backdrop-foreground' />
-          <div className='luna-backdrop-mist' />
-          <div className='luna-backdrop-landscape-haze' />
-          <div className='luna-backdrop-noise' />
+          <div className='ch-backdrop-cover' />
+          <div className='ch-backdrop-sky' />
+          <div className='ch-backdrop-glow' />
+          <div className='ch-backdrop-glow-secondary' />
+          <div className='ch-backdrop-landscape' />
+          <div className='ch-backdrop-foreground' />
+          <div className='ch-backdrop-mist' />
+          <div className='ch-backdrop-landscape-haze' />
+          <div className='ch-backdrop-noise' />
         </div>
 
         {/* 主要布局容器 */}

@@ -125,10 +125,10 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
   return (
     <section className={`mb-10 ${className || ''}`}>
       <div className='mb-5 flex items-center justify-between'>
-        <h2 className='luna-section-title'>继续观看</h2>
+        <h2 className='ch-section-title'>继续观看</h2>
         {!loading && visiblePlayRecords.length > 0 ? (
           <button
-            className='luna-section-action'
+            className='ch-section-action'
             onClick={async () => {
               await clearAllPlayRecords();
               setPlayRecords([]);
@@ -142,11 +142,11 @@ export default function ContinueWatching({ className }: ContinueWatchingProps) {
         {loading
           ? Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className={cardContainerClassName}>
-                <div className='luna-skeleton-card relative aspect-[2/3] w-full animate-pulse'>
+                <div className='ch-skeleton-card relative aspect-[2/3] w-full animate-pulse'>
                   <div className='absolute inset-0 bg-white/10 dark:bg-white/5' />
                 </div>
-                <div className='luna-skeleton-line mt-3 h-4 animate-pulse' />
-                <div className='luna-skeleton-line mt-2 h-3 w-3/4 animate-pulse' />
+                <div className='ch-skeleton-line mt-3 h-4 animate-pulse' />
+                <div className='ch-skeleton-line mt-2 h-3 w-3/4 animate-pulse' />
               </div>
             ))
           : visiblePlayRecords.map((record) => {

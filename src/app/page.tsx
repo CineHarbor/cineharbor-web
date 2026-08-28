@@ -407,10 +407,10 @@ function HomeClient() {
             // 收藏夹视图
             <section className='mb-10'>
               <div className='mb-5 flex items-center justify-between'>
-                <h2 className='luna-section-title'>我的收藏</h2>
+                <h2 className='ch-section-title'>我的收藏</h2>
                 {visibleFavoriteItems.length > 0 && (
                   <button
-                    className='luna-section-action'
+                    className='ch-section-action'
                     onClick={async () => {
                       await clearAllFavorites();
                       setFavoriteItems([]);
@@ -437,7 +437,7 @@ function HomeClient() {
                   </div>
                 ))}
                 {visibleFavoriteItems.length === 0 && (
-                  <div className='luna-empty-state col-span-full px-6 py-10 text-center text-sm'>
+                  <div className='ch-empty-state col-span-full px-6 py-10 text-center text-sm'>
                     暂无收藏内容
                   </div>
                 )}
@@ -453,10 +453,10 @@ function HomeClient() {
               {loading || filteredHotMovies.length > 0 ? (
                 <section className='mb-10'>
                   <div className='mb-5 flex items-center justify-between'>
-                    <h2 className='luna-section-title'>热门电影</h2>
+                    <h2 className='ch-section-title'>热门电影</h2>
                     <Link
                       href='/douban?type=movie'
-                      className='luna-section-action'
+                      className='ch-section-action'
                     >
                       查看更多
                       <ChevronRight className='w-4 h-4 ml-1' />
@@ -499,10 +499,10 @@ function HomeClient() {
               {loading || filteredHotTvShows.length > 0 ? (
                 <section className='mb-10'>
                   <div className='mb-5 flex items-center justify-between'>
-                    <h2 className='luna-section-title'>热门剧集</h2>
+                    <h2 className='ch-section-title'>热门剧集</h2>
                     <Link
                       href='/douban?type=tv'
-                      className='luna-section-action'
+                      className='ch-section-action'
                     >
                       查看更多
                       <ChevronRight className='w-4 h-4 ml-1' />
@@ -544,10 +544,10 @@ function HomeClient() {
               {loading || filteredTodayBangumiItems.length > 0 ? (
                 <section className='mb-10'>
                   <div className='mb-5 flex items-center justify-between'>
-                    <h2 className='luna-section-title'>新番放送</h2>
+                    <h2 className='ch-section-title'>新番放送</h2>
                     <Link
                       href='/douban?type=anime'
-                      className='luna-section-action'
+                      className='ch-section-action'
                     >
                       查看更多
                       <ChevronRight className='w-4 h-4 ml-1' />
@@ -596,10 +596,10 @@ function HomeClient() {
               {loading || filteredHotVarietyShows.length > 0 ? (
                 <section className='mb-10'>
                   <div className='mb-5 flex items-center justify-between'>
-                    <h2 className='luna-section-title'>热门综艺</h2>
+                    <h2 className='ch-section-title'>热门综艺</h2>
                     <Link
                       href='/douban?type=show'
-                      className='luna-section-action'
+                      className='ch-section-action'
                     >
                       查看更多
                       <ChevronRight className='w-4 h-4 ml-1' />
@@ -638,7 +638,7 @@ function HomeClient() {
               ) : null}
 
               {!loading && !hasVisibleHomeRecommendations ? (
-                <section className='luna-empty-state mb-10 px-6 py-14 text-center text-sm'>
+                <section className='ch-empty-state mb-10 px-6 py-14 text-center text-sm'>
                   当前评分过滤条件下暂无可展示推荐
                 </section>
               ) : null}
@@ -675,7 +675,7 @@ function HomeClient() {
           }}
         >
           <div
-            className='luna-popover w-full max-w-md rounded-[1.75rem] p-6 transition-all duration-300 hover:shadow-2xl'
+            className='ch-popover w-full max-w-md rounded-[1.75rem] p-6 transition-all duration-300 hover:shadow-2xl'
             onTouchMove={(e) => {
               // 允许公告内容区域正常滚动，阻止事件冒泡到外层
               e.stopPropagation();
@@ -685,26 +685,26 @@ function HomeClient() {
             }}
           >
             <div className='flex justify-between items-start mb-4'>
-              <h3 className='border-b border-[var(--luna-accent)] pb-1 text-2xl font-bold tracking-tight text-[var(--luna-copy-strong)]'>
+              <h3 className='border-b border-[var(--ch-accent)] pb-1 text-2xl font-bold tracking-tight text-[var(--ch-copy-strong)]'>
                 提示
               </h3>
               <button
                 onClick={() => handleCloseAnnouncement(announcement)}
-                className='text-[var(--luna-copy-muted)] transition-colors hover:text-[var(--luna-copy-strong)]'
+                className='text-[var(--ch-copy-muted)] transition-colors hover:text-[var(--ch-copy-strong)]'
                 aria-label='关闭'
               ></button>
             </div>
             <div className='mb-6'>
-              <div className='relative mb-4 overflow-hidden rounded-[1.25rem] border border-[var(--luna-card-border)] bg-[var(--luna-card-fill)] px-4 py-4'>
-                <div className='absolute inset-y-0 left-0 w-1.5 bg-[var(--luna-accent)]'></div>
-                <p className='ml-2 leading-relaxed text-[var(--luna-copy-muted)]'>
+              <div className='relative mb-4 overflow-hidden rounded-[1.25rem] border border-[var(--ch-card-border)] bg-[var(--ch-card-fill)] px-4 py-4'>
+                <div className='absolute inset-y-0 left-0 w-1.5 bg-[var(--ch-accent)]'></div>
+                <p className='ml-2 leading-relaxed text-[var(--ch-copy-muted)]'>
                   {announcement}
                 </p>
               </div>
             </div>
             <button
               onClick={() => handleCloseAnnouncement(announcement)}
-              className='w-full rounded-[1rem] bg-[var(--luna-accent)] px-4 py-3 font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg'
+              className='w-full rounded-[1rem] bg-[var(--ch-accent)] px-4 py-3 font-medium text-white shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg'
             >
               我知道了
             </button>
