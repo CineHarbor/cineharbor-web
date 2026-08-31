@@ -1,6 +1,6 @@
 # cineharbor-web Next Actions
 
-0. ~~提交并推送本次 Agnir 初始化~~ ✅ 已完成（2026-08-31）。
+0. **推送本次改动**：`main` 领先 `origin/main` 3 个提交 —— `aaea96c`（三源评分 P0）、`490fa33`（gen:manifest 品牌修复）、`6bd7e99`（主题色单一来源）；推送走 `github.com-matt`。
 1. 本地开发配置 `.env.local`（含 Upstash 等密钥，不入库）。
 2. 数据面边界遵循 ADR-0004：既有页面继续走 `/api`，新客户端走 local-service `/addons`。
 3. `pnpm install` / `pnpm dev` / `pnpm typecheck` / `pnpm build` / `pnpm test`。
@@ -11,3 +11,7 @@
 - ⏭ P1：接入 IMDb 真实数据源（官方 datasets 的 `title.ratings.tsv.gz` 同步脚本，或官方 API key），补 `providers/imdb.ts` 的 transport；`douban_id → imdb_id` 反查映射。
 - ⏭ P2：接入 RT 授权 feed（`providers/rt.ts` 的 transport），播放详情页 `app/play` 展示完整三源评分区（`IMDb x.x/10 · x万票`、`RT xx% Tomatometer`）。
 - ⏭ P3：手工绑定/异常匹配回收、命中率统计、同步脚本与更多测试。
+
+## 构建 / 品牌
+
+- 品牌主题色单一来源 `NEXT_PUBLIC_THEME_COLOR`（默认 `#0B1220`），`generate-manifest.js` 与 `app/layout.tsx` theme-color meta 读同一变量；改色只改 env 一处。

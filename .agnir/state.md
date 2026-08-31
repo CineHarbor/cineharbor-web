@@ -8,4 +8,5 @@ CineHarbor Web 客户端（Next.js + PWA），对应 Stremio `stremio-web`。P4 
 - 常用命令：`pnpm dev`（含生成 PWA manifest）/ `pnpm typecheck` / `pnpm build` / `pnpm test`。
 - 环境变量见旧项目 `.env.local`（含 Upstash 等密钥），本地开发需自行配置；敏感值不入库。
 - 三源评分聚合（2026-08-31 P0 落地）：`src/lib/ratings/`（types/cache/title-normalize/title-match/resolver/providers）+ `POST /api/ratings/batch`；豆瓣真实接入，IMDb/RT 经 `IMDB_RATINGS_JSON` / `RT_RATINGS_JSON` 门控优雅降级；搜索页 `LegacySearchPage` 已切统一接口，`VideoCard` 已展示评分行。
+- 品牌主题色单一来源 `NEXT_PUBLIC_THEME_COLOR`（默认 `#0B1220`），manifest 与 layout theme-color 读同一变量；`generate-manifest.js` 已补齐品牌色 + maskable 图标（与提交版 manifest 幂等）。
 - 许可证：CC BY-NC-SA 4.0。
