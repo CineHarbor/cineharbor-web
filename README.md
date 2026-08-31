@@ -21,6 +21,9 @@ pnpm test         # jest
 
 运行/构建所需变量见旧项目 `.env.local`（含 Upstash 等密钥），本地开发需自行配置；敏感值不入库。
 
+- `NEXT_PUBLIC_SITE_NAME`：站点名（同时写入 `public/manifest.json`，由 `pnpm gen:manifest` 生成）。
+- `NEXT_PUBLIC_THEME_COLOR`：品牌主题色（默认 `#0B1220`），`public/manifest.json` 的 `theme_color`/`background_color` 与 `app/layout.tsx` 的 `theme-color` meta 读同一变量，改色只改这一处。
+
 三源评分聚合（`POST /api/ratings/batch`，实现见 `src/lib/ratings/`，方案见门面仓 `docs/plans/douban-imdb-rt-integration-plan.md`）：
 
 - 豆瓣：无需额外配置，复用现有 `NEXT_PUBLIC_DOUBAN_PROXY*`。

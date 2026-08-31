@@ -13,8 +13,9 @@ const manifestPath = path.join(publicDir, 'manifest.json');
 // 从环境变量获取站点名称
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'CineHarbor';
 
-// 品牌色 #0B1220：与 src/app/layout.tsx 的 <meta name='theme-color'> 保持一致，改色需两处同步。
-const BRAND_THEME_COLOR = '#0B1220';
+// 品牌主题色：单一来源为环境变量 NEXT_PUBLIC_THEME_COLOR（见 README 环境变量），
+// 未设置时回落品牌默认 #0B1220。src/app/layout.tsx 的 theme-color meta 读同一变量。
+const BRAND_THEME_COLOR = process.env.NEXT_PUBLIC_THEME_COLOR || '#0B1220';
 
 // manifest.json 模板
 const manifestTemplate = {

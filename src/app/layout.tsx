@@ -266,7 +266,10 @@ export default async function RootLayout({
           href='/favicon-32x32.png?v=20260828'
         />
         <link rel='apple-touch-icon' href='/apple-touch-icon.png' />
-        <meta name='theme-color' content='#0B1220' />
+        <meta
+          name='theme-color'
+          content={process.env.NEXT_PUBLIC_THEME_COLOR || '#0B1220'}
+        />
         <meta property='og:image' content='/og-image.png' />
         {/* 将配置序列化后直接写入脚本，浏览器端可通过 window.RUNTIME_CONFIG 获取 */}
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
