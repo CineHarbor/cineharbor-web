@@ -2,6 +2,7 @@
   "name": "cineharbor-web",
   "version": "0.1.0",
   "private": true,
+  "license": "CC-BY-NC-SA-4.0",
   "scripts": {
     "dev": "pnpm gen:manifest && next dev -H 0.0.0.0",
     "dev:pwa": "ENABLE_PWA_DEV=true pnpm dev",

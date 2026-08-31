@@ -2,7 +2,10 @@
 
 CineHarbor Web 客户端（Next.js + PWA），对应 Stremio 的 `stremio-web`。
 
-> P4 阶段从旧项目迁入；数据面经本地 `cineharbor-local-service` 的 `/addons` 聚合端点消费内容。
+> P4 阶段从旧项目迁入。数据面有两条通路，边界见 ADR-0004：
+>
+> - 既有页面（搜索/播放/直播）继续走原生 `/api`（「来源 + 剧集」富模型，保留逐集点播等能力），不强行降级到 addon 扁平模型。
+> - 本地 `cineharbor-local-service` 的 `/addons` 聚合端点服务于 Stremio 双向互操作与桌面壳等新客户端，`src/lib/transport/addon-client.ts` 为传输层。
 
 ## 常用命令
 
