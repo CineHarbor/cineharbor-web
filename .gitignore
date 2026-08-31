@@ -11,5 +11,7 @@ out
 .env
 .env*.local
 *.tsbuildinfo
+# IMDb 官方 datasets 编译出的运行时索引（`pnpm sync:imdb` 生成）
+/data
 .DS_Store
 .vercel

@@ -15,6 +15,7 @@ pnpm dev          # 开发服务器（含生成 PWA manifest）
 pnpm typecheck    # tsc 类型检查
 pnpm build        # 生产构建
 pnpm test         # jest
+pnpm sync:imdb    # 同步 IMDb 官方 datasets，生成运行时评分索引
 ```
 
 ## 环境变量
@@ -27,8 +28,8 @@ pnpm test         # jest
 三源评分聚合（`POST /api/ratings/batch`，实现见 `src/lib/ratings/`，方案见门面仓 `docs/plans/douban-imdb-rt-integration-plan.md`）：
 
 - 豆瓣：无需额外配置，复用现有 `NEXT_PUBLIC_DOUBAN_PROXY*`。
-- IMDb：`IMDB_RATINGS_JSON` = `{"<imdb_id>":{"value":7.9,"votes":123456}}`（自用数据集浓缩）或后续官方 API key。
-- Rotten Tomatoes：`RT_RATINGS_JSON` = `{"<rt_slug>":{"value":81}}`，只展示 `Tomatometer`。
+- IMDb：`pnpm sync:imdb` 用官方 datasets 零 key 生成 `data/imdb-index.json`（`title.basics/akas/ratings`；`IMDB_INDEX_PATH` 可覆盖路径），运行时按「显式 imdb_id」或「标题+年份」匹配取评分。
+- Rotten Tomatoes：`RT_RATINGS_JSON` = `{"<rt_slug>":{"value":81}}`，只展示 `Tomatometer`（P2 接入授权 feed 前为占位）。
 - 展示开关：`SiteConfig.ShowDoubanRating / ShowImdbRating / ShowRtRating`（默认全开）。
 
 未配置 IMDb / RT 时，对应源优雅降级（不展示），不影响豆瓣与搜索主链路。

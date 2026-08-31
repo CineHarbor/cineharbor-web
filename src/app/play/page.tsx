@@ -96,6 +96,8 @@ import {
   saveSkipConfig,
   subscribeToDataUpdates,
 } from '@/lib/profile/client';
+import { fetchRatingsBatch } from '@/lib/ratings/client';
+import { RatingEntry } from '@/lib/ratings/types';
 import { getRuntimeConfig } from '@/lib/runtime-config';
 import { acquireScrollLock } from '@/lib/scroll-lock';
 import { FollowRecord, SearchResult } from '@/lib/types';
@@ -203,6 +205,16 @@ function readPositiveNumberSearchParam(value: string | null): number {
   return Number.isFinite(parsedValue) && parsedValue > 0
     ? Math.trunc(parsedValue)
     : 0;
+}
+
+function formatImdbVotes(votes: number): string {
+  if (votes >= 100_000_000) {
+    return `${(votes / 100_000_000).toFixed(1)}亿`;
+  }
+  if (votes >= 10_000) {
+    return `${(votes / 10_000).toFixed(1)}万`;
+  }
+  return String(votes);
 }
 
 function isTransientPlaybackBootstrapError(
@@ -586,6 +598,39 @@ function PlayPageClient() {
   // 搜索所需信息
   const [searchTitle] = useState(searchParams.get('stitle') || '');
   const [searchType] = useState(searchParams.get('stype') || '');
+
+  // 详情页 IMDb 评分（异步补齐，失败降级不阻塞播放主链路）
+  const [imdbRating, setImdbRating] = useState<RatingEntry | null>(null);
+  useEffect(() => {
+    if (!videoTitle) {
+      setImdbRating(null);
+      return;
+    }
+
+    let cancelled = false;
+    fetchRatingsBatch([
+      {
+        key: 'play',
+        title: videoTitle,
+        year: videoYear || undefined,
+        douban_id: videoDoubanId || undefined,
+      },
+    ])
+      .then((items) => {
+        if (!cancelled) {
+          setImdbRating(items['play']?.ratings?.imdb ?? null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setImdbRating(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [videoTitle, videoYear, videoDoubanId]);
 
   // 是否需要优选
   const [needPrefer, setNeedPrefer] = useState(
@@ -4168,6 +4213,19 @@ function PlayPageClient() {
                   </span>
                 )}
                 {detail?.type_name && <span>{detail.type_name}</span>}
+                {imdbRating && (
+                  <a
+                    href={imdbRating.url}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='text-[#f5c518] font-semibold hover:underline'
+                  >
+                    IMDb {imdbRating.value.toFixed(1)}/10
+                    {imdbRating.votes
+                      ? ` · ${formatImdbVotes(imdbRating.votes)}票`
+                      : ''}
+                  </a>
+                )}
               </div>
               {/* 剧情简介 */}
               {detail?.desc && (
