@@ -45,6 +45,7 @@ import {
   saveFavorite,
   subscribeToDataUpdates,
 } from '@/lib/profile/client';
+import { RatingEntry,RatingsBundle } from '@/lib/ratings/types';
 import { FollowRecord, SearchResult } from '@/lib/types';
 import { processImageUrl } from '@/lib/utils';
 import { isAdultContentResult, isAdultSourceCandidate } from '@/lib/yellow';
@@ -71,6 +72,7 @@ export interface VideoCardProps {
   douban_id?: number;
   onDelete?: () => void;
   rate?: string;
+  ratings?: RatingsBundle;
   type?: string;
   isBangumi?: boolean;
   isAggregate?: boolean;
@@ -134,6 +136,11 @@ function getVideoTypeLabel(
   }
 }
 
+function formatRatingValue(entry: RatingEntry): string {
+  // RT 用百分比，豆瓣/IMDb 用 10 分制，UI 不混用。
+  return entry.scale === 100 ? `${entry.value}%` : `${entry.value}`;
+}
+
 const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
   function VideoCard(
     {
@@ -152,6 +159,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
       douban_id,
       onDelete,
       rate,
+      ratings,
       type = '',
       isBangumi = false,
       isAggregate = false,
@@ -1033,6 +1041,15 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
     const showEpisodesBadge = Boolean(actualEpisodes && actualEpisodes > 1);
     const hasFollowNewEpisodes = hasNewEpisodes(followRecord);
 
+    // 统一评分行只在搜索/豆瓣上下文展示，避免播放记录与收藏卡片拥挤。
+    const ratingsEntries = ratings
+      ? ([ratings.douban, ratings.imdb, ratings.rt].filter(
+          (entry): entry is RatingEntry => Boolean(entry)
+        ) as RatingEntry[])
+      : [];
+    const showRatingsRow =
+      (from === 'search' || from === 'douban') && ratingsEntries.length > 0;
+
     // 移动端操作菜单配置
     const mobileActions = useMemo(() => {
       const actions = [];
@@ -1683,6 +1700,24 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(
                     >
                       {item.icon}
                       {item.label}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+
+              {showRatingsRow ? (
+                <div className='mt-[0.3rem] flex flex-wrap items-center gap-x-[0.55rem] gap-y-0.5 text-[0.7rem] leading-none text-[var(--ch-card-muted)]'>
+                  {ratingsEntries.map((entry) => (
+                    <span
+                      key={entry.source}
+                      className='inline-flex items-baseline gap-x-1'
+                    >
+                      <span className='font-medium text-[var(--ch-card-text)]'>
+                        {entry.label}
+                      </span>
+                      <span className='font-semibold text-[var(--ch-card-text)]'>
+                        {formatRatingValue(entry)}
+                      </span>
                     </span>
                   ))}
                 </div>

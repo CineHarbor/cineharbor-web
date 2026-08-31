@@ -22,6 +22,9 @@ export interface AdminConfig {
     DisableYellowFilter: boolean;
     FluidSearch: boolean;
     EnableWebLive: boolean;
+    ShowDoubanRating?: boolean;
+    ShowImdbRating?: boolean;
+    ShowRtRating?: boolean;
   };
   UserConfig: {
     Users: {

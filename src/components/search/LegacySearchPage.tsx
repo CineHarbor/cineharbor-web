@@ -26,11 +26,16 @@ import {
   filterItemsByMinimumRating,
   passesGlobalRatingFilter,
 } from '@/lib/rating-filter';
+import { fetchRatingsBatch } from '@/lib/ratings/client';
+import {
+  RatingQueryItem,
+  RatingsBundle,
+  ResolvedRating,
+} from '@/lib/ratings/types';
 import {
   type SearchHistoryEntry,
   type SearchHistoryMode,
 } from '@/lib/search-history';
-import { apiFetch } from '@/lib/transport/api-client';
 import { SearchResult } from '@/lib/types';
 
 import {
@@ -88,12 +93,12 @@ function LegacySearchPageClient({
   const [completedSources, setCompletedSources] = useState(0);
   const pendingResultsRef = useRef<SearchResult[]>([]);
   const flushTimerRef = useRef<number | null>(null);
-  const [doubanRatings, setDoubanRatings] = useState<Record<string, string>>(
-    {}
-  );
-  const pendingDoubanRatingIdsRef = useRef<Set<number>>(new Set());
-  const resolvedDoubanRatingIdsRef = useRef<Set<number>>(new Set());
-  const doubanRatingRequestTokenRef = useRef(0);
+  const [resolvedRatings, setResolvedRatings] = useState<
+    Record<string, ResolvedRating>
+  >({});
+  const pendingRatingIdsRef = useRef<Set<number>>(new Set());
+  const resolvedRatingIdsRef = useRef<Set<number>>(new Set());
+  const ratingRequestTokenRef = useRef(0);
   const [useFluidSearch, setUseFluidSearch] = useState(true);
   const cachedDiscoveryEntry = useSearchCacheStore(
     (state) => state.globalDiscoveryEntries[GLOBAL_DOUBAN_AGGREGATE_CACHE_KEY]
@@ -204,10 +209,10 @@ function LegacySearchPageClient({
   };
 
   const resetDoubanRatings = () => {
-    doubanRatingRequestTokenRef.current += 1;
-    pendingDoubanRatingIdsRef.current.clear();
-    resolvedDoubanRatingIdsRef.current.clear();
-    setDoubanRatings({});
+    ratingRequestTokenRef.current += 1;
+    pendingRatingIdsRef.current.clear();
+    resolvedRatingIdsRef.current.clear();
+    setResolvedRatings({});
   };
 
   const getDoubanRating = (doubanId?: number) => {
@@ -215,7 +220,16 @@ function LegacySearchPageClient({
       return '';
     }
 
-    return doubanRatings[doubanId.toString()] || '';
+    const entry = resolvedRatings[doubanId.toString()]?.ratings?.douban;
+    return entry ? entry.value.toFixed(1) : '';
+  };
+
+  const getRatingsBundle = (doubanId?: number): RatingsBundle => {
+    if (!doubanId || doubanId <= 0) {
+      return {};
+    }
+
+    return resolvedRatings[doubanId.toString()]?.ratings ?? {};
   };
   // 过滤器：非聚合与聚合
   const [filterAll, setFilterAll] = useState<{
@@ -357,18 +371,20 @@ function LegacySearchPageClient({
   }, [aggregatedResults]);
 
   useEffect(() => {
-    const idsToFetch = Array.from(
-      new Set(
-        searchResults
-          .map((item) => item.douban_id)
-          .filter((id): id is number => typeof id === 'number' && id > 0)
-      )
-    ).filter((id) => {
+    // 以 douban_id 为锚点聚合评分查询项（同一部片只解析一次）
+    const byDoubanId = new Map<number, SearchResult>();
+    searchResults.forEach((item) => {
+      if (item.douban_id && item.douban_id > 0 && !byDoubanId.has(item.douban_id)) {
+        byDoubanId.set(item.douban_id, item);
+      }
+    });
+
+    const idsToFetch = Array.from(byDoubanId.keys()).filter((id) => {
       const key = id.toString();
       return (
-        !Object.prototype.hasOwnProperty.call(doubanRatings, key) &&
-        !pendingDoubanRatingIdsRef.current.has(id) &&
-        !resolvedDoubanRatingIdsRef.current.has(id)
+        !Object.prototype.hasOwnProperty.call(resolvedRatings, key) &&
+        !pendingRatingIdsRef.current.has(id) &&
+        !resolvedRatingIdsRef.current.has(id)
       );
     });
 
@@ -376,56 +392,57 @@ function LegacySearchPageClient({
       return;
     }
 
-    const requestToken = doubanRatingRequestTokenRef.current;
-    const batchSize = 12;
+    const requestToken = ratingRequestTokenRef.current;
+    const batchSize = 20;
 
     for (let index = 0; index < idsToFetch.length; index += batchSize) {
       const batch = idsToFetch.slice(index, index + batchSize);
-      batch.forEach((id) => pendingDoubanRatingIdsRef.current.add(id));
+      batch.forEach((id) => pendingRatingIdsRef.current.add(id));
+
+      const items: RatingQueryItem[] = batch
+        .map((id) => byDoubanId.get(id))
+        .filter((item): item is SearchResult => Boolean(item))
+        .map((item) => ({
+          key: String(item.douban_id),
+          title: item.title,
+          year: item.year,
+          type: item.episodes && item.episodes.length > 1 ? 'tv' : 'movie',
+          douban_id: item.douban_id,
+        }));
 
       void (async () => {
         try {
-          const response = await apiFetch('/douban/ratings', {
-            searchParams: {
-              ids: batch.join(','),
-            },
-          });
+          const resolved = await fetchRatingsBatch(items);
 
-          if (!response.ok) {
-            throw new Error('获取豆瓣评分失败');
-          }
-
-          const data = await response.json();
-          const ratings =
-            data?.ratings && typeof data.ratings === 'object'
-              ? (data.ratings as Record<string, string>)
-              : {};
-
-          if (doubanRatingRequestTokenRef.current !== requestToken) {
+          if (ratingRequestTokenRef.current !== requestToken) {
             return;
           }
 
-          if (Object.keys(ratings).length > 0) {
+          const next: Record<string, ResolvedRating> = {};
+          for (const [key, value] of Object.entries(resolved)) {
+            if (value) {
+              next[key] = value;
+            }
+          }
+
+          if (Object.keys(next).length > 0) {
             startTransition(() => {
-              setDoubanRatings((prev) => ({
-                ...prev,
-                ...ratings,
-              }));
+              setResolvedRatings((prev) => ({ ...prev, ...next }));
             });
           }
         } catch {
           // 评分加载失败时保留搜索结果，不阻塞页面使用
         } finally {
-          if (doubanRatingRequestTokenRef.current === requestToken) {
+          if (ratingRequestTokenRef.current === requestToken) {
             batch.forEach((id) => {
-              pendingDoubanRatingIdsRef.current.delete(id);
-              resolvedDoubanRatingIdsRef.current.add(id);
+              pendingRatingIdsRef.current.delete(id);
+              resolvedRatingIdsRef.current.add(id);
             });
           }
         }
       })();
     }
-  }, [doubanRatings, searchResults]);
+  }, [resolvedRatings, searchResults]);
 
   // 构建筛选选项
   const filterOptions = useMemo(() => {
@@ -519,13 +536,12 @@ function LegacySearchPageClient({
     () =>
       filterItemsByMinimumRating(
         filteredAllResults,
-        (item) =>
-          item.douban_id ? doubanRatings[item.douban_id.toString()] || '' : '',
+        (item) => getDoubanRating(item.douban_id),
         isGlobalRatingFilterEnabled,
         globalMinimumRating
       ),
     [
-      doubanRatings,
+      resolvedRatings,
       filteredAllResults,
       globalMinimumRating,
       isGlobalRatingFilterEnabled,
@@ -578,13 +594,13 @@ function LegacySearchPageClient({
       filteredAggResults.filter(([_, group]) => {
         const doubanId = computeGroupStats(group).douban_id;
         return passesGlobalRatingFilter(
-          doubanId ? doubanRatings[doubanId.toString()] || '' : '',
+          doubanId ? getDoubanRating(doubanId) : '',
           isGlobalRatingFilterEnabled,
           globalMinimumRating
         );
       }),
     [
-      doubanRatings,
+      resolvedRatings,
       filteredAggResults,
       globalMinimumRating,
       isGlobalRatingFilterEnabled,
@@ -1184,6 +1200,7 @@ function LegacySearchPageClient({
                           source_names={source_names}
                           douban_id={douban_id}
                           rate={getDoubanRating(douban_id)}
+                          ratings={getRatingsBundle(douban_id)}
                           query={
                             searchQuery.trim() !== title
                               ? searchQuery.trim()
@@ -1215,6 +1232,7 @@ function LegacySearchPageClient({
                         source_name={item.source_name}
                         douban_id={item.douban_id}
                         rate={getDoubanRating(item.douban_id)}
+                        ratings={getRatingsBundle(item.douban_id)}
                         query={
                           searchQuery.trim() !== item.title
                             ? searchQuery.trim()

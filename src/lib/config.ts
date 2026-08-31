@@ -453,6 +453,9 @@ async function getInitConfig(
         process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === 'true',
       FluidSearch: process.env.NEXT_PUBLIC_FLUID_SEARCH !== 'false',
       EnableWebLive: false,
+      ShowDoubanRating: true,
+      ShowImdbRating: true,
+      ShowRtRating: true,
     },
     UserConfig: {
       Users: [],
@@ -619,6 +622,9 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
         process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === 'true',
       FluidSearch: process.env.NEXT_PUBLIC_FLUID_SEARCH !== 'false',
       EnableWebLive: false,
+      ShowDoubanRating: true,
+      ShowImdbRating: true,
+      ShowRtRating: true,
     };
   } else {
     const siteConfig = adminConfig.SiteConfig;
@@ -652,6 +658,9 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
       DisableYellowFilter: siteConfig.DisableYellowFilter ?? false,
       FluidSearch: siteConfig.FluidSearch ?? true,
       EnableWebLive: siteConfig.EnableWebLive ?? false,
+      ShowDoubanRating: siteConfig.ShowDoubanRating ?? true,
+      ShowImdbRating: siteConfig.ShowImdbRating ?? true,
+      ShowRtRating: siteConfig.ShowRtRating ?? true,
     };
   }
   if (
