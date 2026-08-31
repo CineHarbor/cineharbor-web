@@ -13,6 +13,9 @@ const manifestPath = path.join(publicDir, 'manifest.json');
 // 从环境变量获取站点名称
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'CineHarbor';
 
+// 品牌色 #0B1220：与 src/app/layout.tsx 的 <meta name='theme-color'> 保持一致，改色需两处同步。
+const BRAND_THEME_COLOR = '#0B1220';
+
 // manifest.json 模板
 const manifestTemplate = {
   name: siteName,
@@ -21,7 +24,8 @@ const manifestTemplate = {
   start_url: '/',
   scope: '/',
   display: 'standalone',
-  background_color: '#000000',
+  background_color: BRAND_THEME_COLOR,
+  theme_color: BRAND_THEME_COLOR,
   'apple-mobile-web-app-capable': 'yes',
   'apple-mobile-web-app-status-bar-style': 'black',
   icons: [
@@ -44,6 +48,12 @@ const manifestTemplate = {
       src: '/icons/icon-512x512.png',
       sizes: '512x512',
       type: 'image/png',
+    },
+    {
+      src: '/icons/icon-512-maskable.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'maskable',
     },
   ],
 };
