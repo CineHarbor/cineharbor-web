@@ -3,9 +3,6 @@ import { getRuntimeConfig } from '@/lib/runtime-config';
 import { ApiSearchParams, buildApiUrl, getApiBaseUrl } from './endpoint';
 
 export const LIVE_PROXY_PATHS = {
-  m3u8: '/api/proxy/m3u8',
-  segment: '/api/proxy/segment',
-  key: '/api/proxy/key',
   logo: '/api/proxy/logo',
 } as const;
 
@@ -68,59 +65,6 @@ export function buildMediaProxyUrl(
   return `${normalizeBaseUrl(baseUrl)}${path}${
     queryString ? `?${queryString}` : ''
   }`;
-}
-
-export function buildLiveProxyM3u8Url(params: {
-  url: string;
-  sourceKey: string;
-  allowCORS?: boolean;
-  baseUrl?: string;
-}): string {
-  return buildMediaProxyUrl(
-    LIVE_PROXY_PATHS.m3u8,
-    {
-      url: params.url,
-      'cineharbor-source': params.sourceKey,
-      allowCORS: params.allowCORS,
-    },
-    {
-      baseUrl: params.baseUrl,
-    }
-  );
-}
-
-export function buildLiveProxySegmentUrl(params: {
-  url: string;
-  sourceKey?: string;
-  baseUrl?: string;
-}): string {
-  return buildMediaProxyUrl(
-    LIVE_PROXY_PATHS.segment,
-    {
-      url: params.url,
-      'cineharbor-source': params.sourceKey,
-    },
-    {
-      baseUrl: params.baseUrl,
-    }
-  );
-}
-
-export function buildLiveProxyKeyUrl(params: {
-  url: string;
-  sourceKey?: string;
-  baseUrl?: string;
-}): string {
-  return buildMediaProxyUrl(
-    LIVE_PROXY_PATHS.key,
-    {
-      url: params.url,
-      'cineharbor-source': params.sourceKey,
-    },
-    {
-      baseUrl: params.baseUrl,
-    }
-  );
 }
 
 export function buildLiveLogoProxyUrl(params: {

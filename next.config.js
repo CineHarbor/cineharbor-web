@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 /* eslint-disable @typescript-eslint/no-var-requires */
 
-const defaultRuntimeCaching = require('next-pwa/cache');
+const { buildRuntimeCaching } = require('./src/lib/core/service-worker/runtime-caching');
 
 const isVercel = Boolean(process.env.VERCEL);
 const enablePwaInDev = process.env.ENABLE_PWA_DEV === 'true';
@@ -88,25 +88,6 @@ const nextConfig = {
   },
 };
 
-const runtimeCaching = defaultRuntimeCaching.map((entry) => {
-  if (entry?.options?.cacheName !== 'apis') {
-    return entry;
-  }
-
-  return {
-    ...entry,
-    urlPattern: ({ url }) => {
-      const isSameOrigin = self.origin === url.origin;
-      if (!isSameOrigin) return false;
-
-      const pathname = url.pathname;
-      if (pathname.startsWith('/api/auth/')) return false;
-      if (pathname.startsWith('/api/proxy/vod/')) return false;
-      return pathname.startsWith('/api/');
-    },
-  };
-});
-
 const withPWA = require('next-pwa')({
   dest: 'public',
   disable:
@@ -119,7 +100,7 @@ const withPWA = require('next-pwa')({
     : {}),
   register: true,
   skipWaiting: true,
-  runtimeCaching,
+  runtimeCaching: buildRuntimeCaching((url) => self.origin === url.origin),
   fallbacks: {
     document: '/_offline',
   },

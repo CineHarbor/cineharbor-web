@@ -6,8 +6,15 @@ jest.mock('@/lib/transport/endpoint', () => ({
   buildApiUrl: jest.fn(),
 }));
 
+jest.mock('@/lib/core/content/addon-content-data-source-factory', () => ({
+  getAddonContentDataSource: jest.fn(),
+}));
+
 import { apiFetch } from '@/lib/transport/api-client';
 import { buildApiUrl } from '@/lib/transport/endpoint';
+import {
+  getAddonContentDataSource,
+} from '@/lib/core/content/addon-content-data-source-factory';
 
 import {
   buildContentSearchStreamUrl,
@@ -26,12 +33,20 @@ function createJsonResponse(body: unknown, ok = true): Response {
 const apiFetchMock = apiFetch as jest.MockedFunction<typeof apiFetch>;
 const buildApiUrlMock = buildApiUrl as jest.MockedFunction<typeof buildApiUrl>;
 
+interface AddonDataSourceLike {
+  detail: jest.Mock;
+}
+
+const getDataSourceMock = getAddonContentDataSource as unknown as jest.MockedFunction<
+  () => AddonDataSourceLike
+>;
+
 describe('content discovery client', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('loads content detail through the shared detail route', async () => {
+  it('loads content detail through the addon data source (composite vod id)', async () => {
     const payload = {
       id: '1001',
       source: 'demo',
@@ -39,45 +54,32 @@ describe('content discovery client', () => {
       episodes: ['https://example.com/1.m3u8'],
       episodes_titles: ['第1集'],
     };
-    apiFetchMock.mockResolvedValue(createJsonResponse(payload));
+    const detailMock = jest.fn().mockResolvedValue(payload);
+    getDataSourceMock.mockReturnValue({ detail: detailMock });
 
     await expect(
-      fetchContentDetail(
-        {
-          source: 'demo',
-          id: '1001',
-        },
-        {
-          cache: 'no-store',
-        }
-      )
+      fetchContentDetail({ source: 'demo', id: '1001' })
     ).resolves.toEqual(payload);
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/detail', {
-      cache: 'no-store',
-      searchParams: {
-        source: 'demo',
-        id: '1001',
-      },
-    });
+    expect(detailMock).toHaveBeenCalledWith('movie', 'vod:demo:1001');
   });
 
-  it('propagates detail route errors through the shared client', async () => {
-    apiFetchMock.mockResolvedValue(
-      createJsonResponse(
-        {
-          error: 'detail failed',
-        },
-        false
-      )
-    );
+  it('keeps an existing vod: id prefix unchanged', async () => {
+    const detailMock = jest.fn().mockResolvedValue({ id: 'x', source: 'demo' });
+    getDataSourceMock.mockReturnValue({ detail: detailMock });
+
+    await fetchContentDetail({ source: 'demo', id: 'vod:demo:1001' });
+
+    expect(detailMock).toHaveBeenCalledWith('movie', 'vod:demo:1001');
+  });
+
+  it('propagates a missing detail as an addon-path error', async () => {
+    const detailMock = jest.fn().mockResolvedValue(null);
+    getDataSourceMock.mockReturnValue({ detail: detailMock });
 
     await expect(
-      fetchContentDetail({
-        source: 'demo',
-        id: 'missing',
-      })
-    ).rejects.toThrow('detail failed');
+      fetchContentDetail({ source: 'demo', id: 'missing' })
+    ).rejects.toThrow('获取视频详情失败');
   });
 
   it('loads content search results and can opt into adult candidates', async () => {

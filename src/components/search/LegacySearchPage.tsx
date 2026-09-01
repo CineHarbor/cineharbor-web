@@ -14,6 +14,10 @@ import {
   buildContentSearchStreamUrl,
   fetchContentSearchResults,
 } from '@/lib/content-discovery-client';
+import {
+  getAddonContentDataSource,
+  USE_ADDON_VOD,
+} from '@/lib/core/content/addon-content-data-source-factory';
 import { getPreferredFluidSearchSetting } from '@/lib/fluid-search';
 import {
   addSearchHistory,
@@ -934,8 +938,10 @@ function LegacySearchPageClient({
         };
       } else {
         // 传统搜索：使用普通接口
-        fetchContentSearchResults(trimmed)
-          .then((results) => {
+        (USE_ADDON_VOD
+          ? getAddonContentDataSource().search(trimmed)
+          : fetchContentSearchResults(trimmed)
+        ).then((results) => {
             if (currentQueryRef.current !== trimmed) return;
 
             const activeYearOrder =

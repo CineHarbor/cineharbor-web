@@ -36,15 +36,14 @@ import { getRuntimeConfig } from '@/lib/runtime-config';
 import { parseCustomTimeFormat } from '@/lib/time';
 import {
   buildLiveLogoUrl as buildLiveLogoProxyUrl,
-  buildLiveStreamProxyUrl,
-  fetchLiveChannels as fetchLiveChannelsData,
   fetchLiveEpg as fetchLiveEpgData,
-  fetchLiveSources as fetchLiveSourcesData,
   LiveChannel,
   LiveEpgData,
   LiveSource,
-  precheckLiveStream as precheckLiveStreamType,
 } from '@/lib/transport/live-client';
+import {
+  getAddonLiveDataSource,
+} from '@/lib/core/live/addon-live-source-factory';
 
 import EpgScrollableRow from '@/components/EpgScrollableRow';
 import PageLayout from '@/components/PageLayout';
@@ -341,7 +340,7 @@ function LivePageClient() {
       setLoadingStage('fetching');
       setLoadingMessage('正在获取直播源...');
 
-      const sources = await fetchLiveSourcesData();
+      const sources = await getAddonLiveDataSource().listSources();
       setLiveSources(sources);
 
       if (sources.length > 0) {
@@ -394,8 +393,8 @@ function LivePageClient() {
     try {
       setIsVideoLoading(true);
 
-      // 从 cachedLiveChannels 获取频道信息
-      const channelsData = await fetchLiveChannelsData(source.key);
+      // 从 cachedLiveChannels 获取频道信息（addon 直连时走 live addon catalog）
+      const channelsData = await getAddonLiveDataSource().listChannels(source.key);
       if (!channelsData || channelsData.length === 0) {
         // 不抛出错误，而是设置空频道列表
         setCurrentChannels([]);
@@ -1089,11 +1088,8 @@ function LivePageClient() {
         cleanupPlayer();
       }
 
-      // precheck type
-      const type = await precheckLiveStreamType(
-        videoUrl,
-        currentSourceRef.current?.key || ''
-      );
+      // addon 直连：流已转链且恒为 m3u8，无预检。
+      const type = 'm3u8';
 
       // 如果不是 m3u8 类型，设置不支持的类型并返回
       if (type !== 'm3u8') {
@@ -1106,10 +1102,8 @@ function LivePageClient() {
       setUnsupportedType(null);
 
       const customType = { m3u8: m3u8Loader };
-      const targetUrl = buildLiveStreamProxyUrl(
-        videoUrl,
-        currentSourceRef.current?.key || ''
-      );
+      // addon 直连：url 已是 addon 转链后的 m3u8，不再二次走原生代理。
+      const targetUrl = videoUrl;
       const isDesktopPlayer = getRuntimeConfig().APP_TARGET === 'desktop';
       try {
         // 创建新的播放器实例

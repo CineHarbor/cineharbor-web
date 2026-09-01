@@ -1,6 +1,10 @@
 import { apiFetch, ApiFetchOptions } from '@/lib/transport/api-client';
 import { buildApiUrl } from '@/lib/transport/endpoint';
 import { SearchResult } from '@/lib/types';
+// addon 直连工厂（模块加载不触碰浏览器 API；worker 仅在调用 site 且浏览器侧才 spawn）。
+import {
+  getAddonContentDataSource,
+} from '@/lib/core/content/addon-content-data-source-factory';
 
 export interface ContentSuggestion {
   text: string;
@@ -45,29 +49,18 @@ export async function fetchContentDetail(
     source: string;
     id: string;
   },
-  options: ContentRequestOptions = {}
+  _options: ContentRequestOptions = {}
 ): Promise<SearchResult> {
-  const response = await apiFetch('/detail', {
-    ...options,
-    searchParams: {
-      source: params.source,
-      id: params.id,
-    },
-  });
-  const payload = await parseJsonResponse<SearchResult & { error?: string }>(
-    response
-  );
-
-  const errorMessage = resolveContentErrorMessage(
-    response,
-    payload,
-    '获取视频详情失败'
-  );
-  if (errorMessage) {
-    throw new Error(errorMessage);
+  // 点播详情已退役原生 /api/detail：统一走 addon 直连（Stremio 两步的 meta+stream 合成）。
+  // 调用方均为浏览器侧组件（play/下载/追更/播放源），无服务端消费。
+  const addonId = params.id.startsWith("vod:")
+    ? params.id
+    : `vod:${params.source}:${params.id}`;
+  const result = await getAddonContentDataSource().detail("movie", addonId);
+  if (!result) {
+    throw new Error("获取视频详情失败");
   }
-
-  return payload;
+  return result;
 }
 
 export async function fetchContentSearchResults(

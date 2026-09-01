@@ -1,46 +1,6 @@
-import {
-  createLiveProxyHeaders,
-  rewriteLiveManifestContent,
-} from './live-proxy';
+import { createLiveProxyHeaders } from './live-proxy';
 
 describe('live proxy core', () => {
-  it('rewrites stream, key and segment urls through the live proxy layer', () => {
-    const manifest = `#EXTM3U
-#EXT-X-MAP:URI="init.mp4"
-#EXT-X-KEY:METHOD=AES-128,URI="key.bin"
-#EXT-X-STREAM-INF:BANDWIDTH=1280000
-variant.m3u8
-segment-0001.ts`;
-
-    const rewritten = rewriteLiveManifestContent(
-      manifest,
-      'https://example.com/live/index.m3u8',
-      {
-        sourceKey: 'demo',
-      }
-    );
-
-    expect(rewritten).toContain('/api/proxy/segment?');
-    expect(rewritten).toContain('/api/proxy/key?');
-    expect(rewritten).toContain('/api/proxy/m3u8?');
-    expect(rewritten).toContain('cineharbor-source=demo');
-  });
-
-  it('keeps bare segment urls direct when allowCORS is enabled', () => {
-    const rewritten = rewriteLiveManifestContent(
-      '#EXTM3U\nsegment-0001.ts',
-      'https://example.com/live/index.m3u8',
-      {
-        sourceKey: 'demo',
-        allowCORS: true,
-      }
-    );
-
-    expect(rewritten.trim()).toBe(
-      '#EXTM3U\nhttps://example.com/live/segment-0001.ts'
-    );
-  });
-
   it('preserves upstream range headers and explicit content length', () => {
     const upstreamHeaders = new Map<string, string>([
       ['content-type', 'application/vnd.apple.mpegurl'],

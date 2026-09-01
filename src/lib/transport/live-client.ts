@@ -1,5 +1,5 @@
 import { apiFetch } from './api-client';
-import { buildLiveLogoProxyUrl, buildLiveProxyM3u8Url } from './media-proxy';
+import { buildLiveLogoProxyUrl } from './media-proxy';
 
 export interface LiveSource {
   key: string;
@@ -32,8 +32,6 @@ export interface LiveEpgData {
   }>;
 }
 
-export type LiveStreamType = 'm3u8' | 'mp4' | 'flv';
-
 async function parseJsonResponse<T>(
   response: Response,
   fallbackMessage: string
@@ -55,53 +53,8 @@ export function buildLiveLogoUrl(
   });
 }
 
-export function buildLiveStreamProxyUrl(
-  videoUrl: string,
-  sourceKey: string
-): string {
-  return buildLiveProxyM3u8Url({
-    url: videoUrl,
-    sourceKey,
-  });
-}
-
-export async function fetchLiveSources(): Promise<LiveSource[]> {
-  const result = await parseJsonResponse<{
-    success?: boolean;
-    error?: string;
-    data?: LiveSource[];
-  }>(await apiFetch('/live/sources'), '获取直播源失败');
-
-  if (!result.success) {
-    throw new Error(result.error || '获取直播源失败');
-  }
-
-  return result.data || [];
-}
-
-export async function fetchLiveChannels(
-  sourceKey: string
-): Promise<LiveChannel[]> {
-  const result = await parseJsonResponse<{
-    success?: boolean;
-    error?: string;
-    data?: LiveChannel[];
-  }>(
-    await apiFetch('/live/channels', {
-      searchParams: {
-        source: sourceKey,
-      },
-    }),
-    '获取频道列表失败'
-  );
-
-  if (!result.success) {
-    throw new Error(result.error || '获取频道列表失败');
-  }
-
-  return result.data || [];
-}
-
+// EPG 在 addon 直连模式下退化为空（tvgId 恒空，见 addon-live-source）；此处保留原生 /live/epg
+// 客户端仅为历史迁移回退，实跑不再命中（guard `channel.tvgId` 恒 false）。
 export async function fetchLiveEpg(
   sourceKey: string,
   tvgId: string
@@ -125,29 +78,4 @@ export async function fetchLiveEpg(
   }
 
   return result.data;
-}
-
-export async function precheckLiveStream(
-  videoUrl: string,
-  sourceKey: string
-): Promise<LiveStreamType> {
-  const result = await parseJsonResponse<{
-    success?: boolean;
-    error?: string;
-    type?: LiveStreamType;
-  }>(
-    await apiFetch('/live/precheck', {
-      searchParams: {
-        url: videoUrl,
-        'cineharbor-source': sourceKey,
-      },
-    }),
-    '预检查失败'
-  );
-
-  if (!result.success || !result.type) {
-    throw new Error(result.error || '预检查失败');
-  }
-
-  return result.type;
 }

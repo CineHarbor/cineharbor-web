@@ -1,10 +1,4 @@
 import { getConfig } from '@/lib/config';
-import { getBaseUrl, resolveUrl } from '@/lib/live';
-import {
-  buildLiveProxyKeyUrl,
-  buildLiveProxyM3u8Url,
-  buildLiveProxySegmentUrl,
-} from '@/lib/transport/media-proxy';
 
 const DEFAULT_LIVE_PROXY_USER_AGENT = 'AptvPlayer/1.4.10';
 
@@ -30,41 +24,6 @@ function normalizeUpstreamUrl(url: string | null | undefined): string {
   }
 
   return decodeURIComponent(normalizedUrl);
-}
-
-function rewriteAttributeUri(
-  line: string,
-  baseUrl: string,
-  builder: (url: string) => string
-): string {
-  const uriMatch = line.match(/URI="([^"]+)"/i);
-  if (!uriMatch?.[1]) {
-    return line;
-  }
-
-  const resolvedUrl = resolveUrl(baseUrl, uriMatch[1]);
-  return line.replace(uriMatch[0], `URI="${builder(resolvedUrl)}"`);
-}
-
-function buildStreamManifestUrl(sourceKey: string, url: string): string {
-  return buildLiveProxyM3u8Url({
-    url,
-    sourceKey,
-  });
-}
-
-function buildSegmentProxyUrl(sourceKey: string, url: string): string {
-  return buildLiveProxySegmentUrl({
-    url,
-    sourceKey,
-  });
-}
-
-function buildKeyProxyUrl(sourceKey: string, url: string): string {
-  return buildLiveProxyKeyUrl({
-    url,
-    sourceKey,
-  });
 }
 
 export function resolveLiveProxySource(
@@ -150,123 +109,6 @@ export async function fetchLiveProxyUpstream(params: {
       }
     ),
   });
-}
-
-export function shouldRewriteLiveManifest(
-  upstreamResponse: Response,
-  upstreamUrl: string | null | undefined
-): boolean {
-  const contentType = upstreamResponse.headers.get('Content-Type') || '';
-  const loweredContentType = contentType.toLowerCase();
-  const targetUrl = upstreamResponse.url || upstreamUrl || '';
-
-  return (
-    loweredContentType.includes('mpegurl') ||
-    loweredContentType.includes('octet-stream') ||
-    /\.m3u8($|[?#])/i.test(targetUrl)
-  );
-}
-
-export function rewriteLiveManifestContent(
-  content: string,
-  finalUrl: string,
-  params: {
-    sourceKey: string;
-    allowCORS?: boolean;
-  }
-): string {
-  const baseUrl = getBaseUrl(finalUrl);
-  const lines = content.split(/\r?\n/);
-  const rewrittenLines: string[] = [];
-
-  for (let index = 0; index < lines.length; index += 1) {
-    const trimmedLine = lines[index].trim();
-
-    if (!trimmedLine) {
-      rewrittenLines.push(trimmedLine);
-      continue;
-    }
-
-    if (trimmedLine.startsWith('#EXT-X-STREAM-INF:')) {
-      rewrittenLines.push(trimmedLine);
-      const nextLine = lines[index + 1]?.trim();
-      if (nextLine && !nextLine.startsWith('#')) {
-        const resolvedUrl = resolveUrl(baseUrl, nextLine);
-        rewrittenLines.push(
-          buildStreamManifestUrl(params.sourceKey, resolvedUrl)
-        );
-        index += 1;
-        continue;
-      }
-      continue;
-    }
-
-    if (trimmedLine.startsWith('#EXT-X-MEDIA:')) {
-      rewrittenLines.push(
-        rewriteAttributeUri(trimmedLine, baseUrl, (url) =>
-          buildStreamManifestUrl(params.sourceKey, url)
-        )
-      );
-      continue;
-    }
-
-    if (trimmedLine.startsWith('#EXT-X-I-FRAME-STREAM-INF:')) {
-      rewrittenLines.push(
-        rewriteAttributeUri(trimmedLine, baseUrl, (url) =>
-          buildStreamManifestUrl(params.sourceKey, url)
-        )
-      );
-      continue;
-    }
-
-    if (
-      trimmedLine.startsWith('#EXT-X-KEY:') ||
-      trimmedLine.startsWith('#EXT-X-SESSION-KEY:')
-    ) {
-      rewrittenLines.push(
-        rewriteAttributeUri(trimmedLine, baseUrl, (url) =>
-          buildKeyProxyUrl(params.sourceKey, url)
-        )
-      );
-      continue;
-    }
-
-    if (
-      trimmedLine.startsWith('#EXT-X-MAP:') ||
-      trimmedLine.startsWith('#EXT-X-PART:') ||
-      trimmedLine.startsWith('#EXT-X-PRELOAD-HINT:')
-    ) {
-      rewrittenLines.push(
-        rewriteAttributeUri(trimmedLine, baseUrl, (url) =>
-          buildSegmentProxyUrl(params.sourceKey, url)
-        )
-      );
-      continue;
-    }
-
-    if (trimmedLine.startsWith('#EXT-X-RENDITION-REPORT:')) {
-      rewrittenLines.push(
-        rewriteAttributeUri(trimmedLine, baseUrl, (url) =>
-          buildStreamManifestUrl(params.sourceKey, url)
-        )
-      );
-      continue;
-    }
-
-    if (!trimmedLine.startsWith('#')) {
-      const resolvedUrl = resolveUrl(baseUrl, trimmedLine);
-      rewrittenLines.push(
-        params.allowCORS
-          ? resolvedUrl
-          : buildSegmentProxyUrl(params.sourceKey, resolvedUrl)
-      );
-      continue;
-    }
-
-    rewrittenLines.push(trimmedLine);
-  }
-
-  return rewrittenLines.join('\n');
 }
 
 export function createLiveProxyHeaders(
