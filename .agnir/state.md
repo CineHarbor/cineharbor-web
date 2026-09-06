@@ -15,4 +15,4 @@ CineHarbor Web 客户端（Next.js + PWA），对应 Stremio `stremio-web`。P4 
   - P2（待续）：RT 真实数据源 transport + 播放详情页完整三源评分区；P3 手工绑定/统计。
 - 品牌主题色单一来源 `NEXT_PUBLIC_THEME_COLOR`（默认 `#0B1220`），manifest 与 layout theme-color 读同一变量；`generate-manifest.js` 已补齐品牌色 + maskable 图标（与提交版 manifest 幂等）。
 - 许可证：CC BY-NC-SA 4.0。
-- Agnir 操作基线：`iorLab/agnir` 稳定发布 `v0.1.0`（revision `2a0cb7bf2068b11f361e315670b2f2dc497b2588`，distribution `agnir-agent-skill`），2026-09-01 兼容操作升级。
+- Agnir 操作基线：`iorLab/agnir` 稳定发布 `v1.0.0`（revision `6d16dcfd17b8e9f22fd25804e22b9f8a516d06c3`，distribution `agnir-agent-skill`）；2026-09-01 经 Principal 授权完成兼容线迁移 Core `0.1` → `1.0`（经 0.2 lineage 迁移 + 稳定晋升）。
