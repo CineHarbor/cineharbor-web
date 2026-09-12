@@ -1,39 +1,16 @@
 'use client';
 
-import { apiFetch } from '@/lib/transport/api-client';
+import {
+  getAddonBangumiClient,
+} from '@/lib/core/bangumi/addon-bangumi-source-factory';
+import type { BangumiCalendarData } from '@/lib/core/bangumi/addon-bangumi-client';
 
-export interface BangumiCalendarData {
-  weekday: {
-    en: string;
-  };
-  items: {
-    id: number;
-    name: string;
-    name_cn: string;
-    rating: {
-      score: number;
-    };
-    air_date: string;
-    images: {
-      large: string;
-      common: string;
-      medium: string;
-      small: string;
-      grid: string;
-    };
-  }[];
-}
+export type { BangumiCalendarData };
 
 export async function GetBangumiCalendarData(): Promise<BangumiCalendarData[]> {
-  const response = await apiFetch('/bangumi/calendar');
-  if (!response.ok) {
-    throw new Error(`获取番剧日历失败: HTTP ${response.status}`);
-  }
-  const data = await response.json();
-  const filteredData = data.map((item: BangumiCalendarData) => ({
+  const data = await getAddonBangumiClient().calendar();
+  return data.map((item) => ({
     ...item,
-    items: item.items.filter(bangumiItem => bangumiItem.images)
+    items: item.items.filter((bangumiItem) => bangumiItem.images),
   }));
-
-  return filteredData;
 }

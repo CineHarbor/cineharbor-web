@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-console,no-case-declarations */
 
+import { getAddonDoubanClient } from '@/lib/core/douban/addon-douban-source-factory';
+
 import { isDesktopAppTarget } from './runtime-config';
 import { apiFetch } from './transport/api-client';
 import { DoubanItem, DoubanResult } from './types';
@@ -418,15 +420,17 @@ export async function getDoubanTitleSearch(
     throw new Error('query 参数不能为空');
   }
 
-  const response = await apiFetch('/douban/search', {
-    searchParams: {
-      q: normalizedQuery,
-      limit: pageLimit,
-      start: pageStart,
-    },
+  // 标题搜索已切 douban addon（原生 `/api/douban/search` 退役）。
+  const list = await getAddonDoubanClient().search(normalizedQuery, {
+    limit: pageLimit,
+    start: pageStart,
   });
 
-  return response.json();
+  return {
+    code: 200,
+    message: '获取成功',
+    list,
+  };
 }
 
 async function fetchDoubanRecommends(

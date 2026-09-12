@@ -409,10 +409,12 @@ function hasHighConfidenceDoubanMatch(
 }
 
 async function fetchPlaybackSearchQuery(
-  query: string
+  query: string,
+  allowAdultResults?: boolean
 ): Promise<SearchResult[]> {
   return fetchContentSearchResults(query, {
     credentials: 'same-origin',
+    allowAdultResults,
   });
 }
 
@@ -562,7 +564,10 @@ export async function searchPlaybackSources(
 
   for (const query of queries) {
     try {
-      const rawResults = await fetchPlaybackSearchQuery(query);
+      const rawResults = await fetchPlaybackSearchQuery(
+        query,
+        params.allowAdultCandidates
+      );
       successfulQueryCount += 1;
       aggregatedResults = mergePlaybackSearchResults(
         aggregatedResults,

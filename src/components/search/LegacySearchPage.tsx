@@ -10,14 +10,7 @@ import React, {
   useState,
 } from 'react';
 
-import {
-  buildContentSearchStreamUrl,
-  fetchContentSearchResults,
-} from '@/lib/content-discovery-client';
-import {
-  getAddonContentDataSource,
-  USE_ADDON_VOD,
-} from '@/lib/core/content/addon-content-data-source-factory';
+import { fetchContentSearchResults } from '@/lib/content-discovery-client';
 import { getPreferredFluidSearchSetting } from '@/lib/fluid-search';
 import {
   addSearchHistory,
@@ -842,124 +835,25 @@ function LegacySearchPageClient({
         setUseFluidSearch(currentFluidSearch);
       }
 
-      if (currentFluidSearch) {
-        // 流式搜索：打开新的流式连接
-        const es = new EventSource(buildContentSearchStreamUrl(trimmed));
-        eventSourceRef.current = es;
+      void fetchContentSearchResults(trimmed)
+        .then((results) => {
+          if (currentQueryRef.current !== trimmed) return;
 
-        es.onmessage = (event) => {
-          if (!event.data) return;
-          try {
-            const payload = JSON.parse(event.data);
-            if (currentQueryRef.current !== trimmed) return;
-            switch (payload.type) {
-              case 'start':
-                setTotalSources(payload.totalSources || 0);
-                setCompletedSources(0);
-                break;
-              case 'source_result': {
-                setCompletedSources((prev) => prev + 1);
-                if (
-                  Array.isArray(payload.results) &&
-                  payload.results.length > 0
-                ) {
-                  // 缓冲新增结果，节流刷入，避免频繁重渲染导致闪烁
-                  const activeYearOrder =
-                    viewMode === 'agg'
-                      ? filterAgg.yearOrder
-                      : filterAll.yearOrder;
-                  const incoming: SearchResult[] =
-                    activeYearOrder === 'none'
-                      ? sortBatchForNoOrder(payload.results as SearchResult[])
-                      : (payload.results as SearchResult[]);
-                  pendingResultsRef.current.push(...incoming);
-                  if (!flushTimerRef.current) {
-                    flushTimerRef.current = window.setTimeout(() => {
-                      const toAppend = pendingResultsRef.current;
-                      pendingResultsRef.current = [];
-                      startTransition(() => {
-                        setSearchResults((prev) => prev.concat(toAppend));
-                      });
-                      flushTimerRef.current = null;
-                    }, 80);
-                  }
-                }
-                break;
-              }
-              case 'source_error':
-                setCompletedSources((prev) => prev + 1);
-                break;
-              case 'complete':
-                setCompletedSources(payload.completedSources || totalSources);
-                // 完成前确保将缓冲写入
-                if (pendingResultsRef.current.length > 0) {
-                  const toAppend = pendingResultsRef.current;
-                  pendingResultsRef.current = [];
-                  if (flushTimerRef.current) {
-                    clearTimeout(flushTimerRef.current);
-                    flushTimerRef.current = null;
-                  }
-                  startTransition(() => {
-                    setSearchResults((prev) => prev.concat(toAppend));
-                  });
-                }
-                setIsLoading(false);
-                try {
-                  es.close();
-                } catch {}
-                if (eventSourceRef.current === es) {
-                  eventSourceRef.current = null;
-                }
-                break;
-            }
-          } catch {}
-        };
+          const activeYearOrder =
+            viewMode === 'agg' ? filterAgg.yearOrder : filterAll.yearOrder;
+          const nextResults: SearchResult[] =
+            activeYearOrder === 'none'
+              ? sortBatchForNoOrder(results)
+              : results;
 
-        es.onerror = () => {
+          setSearchResults(nextResults);
+          setTotalSources(1);
+          setCompletedSources(1);
           setIsLoading(false);
-          // 错误时也清空缓冲
-          if (pendingResultsRef.current.length > 0) {
-            const toAppend = pendingResultsRef.current;
-            pendingResultsRef.current = [];
-            if (flushTimerRef.current) {
-              clearTimeout(flushTimerRef.current);
-              flushTimerRef.current = null;
-            }
-            startTransition(() => {
-              setSearchResults((prev) => prev.concat(toAppend));
-            });
-          }
-          try {
-            es.close();
-          } catch {}
-          if (eventSourceRef.current === es) {
-            eventSourceRef.current = null;
-          }
-        };
-      } else {
-        // 传统搜索：使用普通接口
-        (USE_ADDON_VOD
-          ? getAddonContentDataSource().search(trimmed)
-          : fetchContentSearchResults(trimmed)
-        ).then((results) => {
-            if (currentQueryRef.current !== trimmed) return;
-
-            const activeYearOrder =
-              viewMode === 'agg' ? filterAgg.yearOrder : filterAll.yearOrder;
-            const nextResults: SearchResult[] =
-              activeYearOrder === 'none'
-                ? sortBatchForNoOrder(results)
-                : results;
-
-            setSearchResults(nextResults);
-            setTotalSources(1);
-            setCompletedSources(1);
-            setIsLoading(false);
-          })
-          .catch(() => {
-            setIsLoading(false);
-          });
-      }
+        })
+        .catch(() => {
+          setIsLoading(false);
+        });
       setShowSuggestions(false);
 
       // 保存到搜索历史 (事件监听会自动更新界面)

@@ -135,9 +135,9 @@ describe('download manager manifest candidate helpers', () => {
         missingEpisode,
       ])
     ).toEqual([
-      '/api/proxy/vod/m3u8?source=feifan&url=https%3A%2F%2Fexample.com%2Fblocked%2Findex.m3u8',
-      '/api/proxy/vod/m3u8?source=feifan-copy&url=https%3A%2F%2Fexample.com%2Fblocked%2Findex.m3u8',
-      '/api/proxy/vod/m3u8?source=ikun&url=https%3A%2F%2Fexample.com%2Fplayable%2Findex.m3u8',
+      'http://127.0.0.1:11473/media/vod/m3u8?source=feifan&url=https%3A%2F%2Fexample.com%2Fblocked%2Findex.m3u8',
+      'http://127.0.0.1:11473/media/vod/m3u8?source=feifan-copy&url=https%3A%2F%2Fexample.com%2Fblocked%2Findex.m3u8',
+      'http://127.0.0.1:11473/media/vod/m3u8?source=ikun&url=https%3A%2F%2Fexample.com%2Fplayable%2Findex.m3u8',
       '/api/proxy/vod/m3u8?source=bfzy&url=https%3A%2F%2Fexample.com%2Fcached.m3u8',
     ]);
   });

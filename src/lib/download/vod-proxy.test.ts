@@ -119,16 +119,16 @@ segment-0001.ts`;
     );
 
     expect(rewritten).toContain(
-      'URI="/api/proxy/vod/segment?source=demo&url=https%3A%2F%2Fexample.com%2Fpath%2Fpart-0001.ts"'
+      'URI="http://127.0.0.1:11473/media/vod/segment?source=demo&url=https%3A%2F%2Fexample.com%2Fpath%2Fpart-0001.ts"'
     );
     expect(rewritten).toContain(
-      'URI="/api/proxy/vod/segment?source=demo&url=https%3A%2F%2Fexample.com%2Fpath%2Fpart-0002.ts"'
+      'URI="http://127.0.0.1:11473/media/vod/segment?source=demo&url=https%3A%2F%2Fexample.com%2Fpath%2Fpart-0002.ts"'
     );
     expect(rewritten).toContain(
-      'URI="/api/proxy/vod/m3u8?source=demo&url=https%3A%2F%2Fexample.com%2Fpath%2Faudio.m3u8"'
+      'URI="http://127.0.0.1:11473/media/vod/m3u8?source=demo&url=https%3A%2F%2Fexample.com%2Fpath%2Faudio.m3u8"'
     );
     expect(rewritten).toContain(
-      '/api/proxy/vod/segment?source=demo&url=https%3A%2F%2Fexample.com%2Fpath%2Fsegment-0001.ts'
+      'http://127.0.0.1:11473/media/vod/segment?source=demo&url=https%3A%2F%2Fexample.com%2Fpath%2Fsegment-0001.ts'
     );
   });
 });

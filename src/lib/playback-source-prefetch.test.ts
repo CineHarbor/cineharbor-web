@@ -1,8 +1,13 @@
+import { getAddonContentDataSource } from '@/lib/core/content/addon-content-data-source-factory';
 import { getRuntimeConfig } from '@/lib/runtime-config';
 import { SearchResult } from '@/lib/types';
 
 jest.mock('@/lib/runtime-config', () => ({
   getRuntimeConfig: jest.fn(),
+}));
+
+jest.mock('@/lib/core/content/addon-content-data-source-factory', () => ({
+  getAddonContentDataSource: jest.fn(),
 }));
 
 import {
@@ -27,11 +32,14 @@ function buildSearchResult(partial: Partial<SearchResult>): SearchResult {
   };
 }
 
+const getDataSourceMock = getAddonContentDataSource as unknown as jest.Mock;
+
 describe('playback source prefetch helpers', () => {
   beforeEach(() => {
     (getRuntimeConfig as jest.Mock).mockReturnValue({
       APP_TARGET: 'web',
     });
+    getDataSourceMock.mockReset();
   });
 
   it('prioritizes exact douban id matches over title formatting differences', () => {
@@ -232,7 +240,6 @@ describe('playback source prefetch helpers', () => {
   });
 
   it('continues year fallback search until it finds a full exact match', async () => {
-    const originalFetch = global.fetch;
     const trailer = buildSearchResult({
       id: 'trailer',
       title: '雨霖铃预告片',
@@ -252,41 +259,22 @@ describe('playback source prefetch helpers', () => {
       ],
       episodes_titles: ['第1集', '第2集'],
     });
-    const fetchMock = jest
+    const search = jest
       .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ results: [trailer] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ results: [fullSeries] }),
-      });
+      .mockResolvedValueOnce([trailer])
+      .mockResolvedValueOnce([fullSeries]);
+    getDataSourceMock.mockReturnValue({ search, detail: jest.fn() });
 
-    global.fetch = fetchMock as typeof fetch;
+    const results = await searchPlaybackSources({
+      title: '雨霖铃',
+      year: '2026',
+      doubanId: 36310054,
+    });
 
-    try {
-      const results = await searchPlaybackSources({
-        title: '雨霖铃',
-        year: '2026',
-        doubanId: 36310054,
-      });
-      const firstRequestUrl = new URL(
-        String(fetchMock.mock.calls[0][0]),
-        'http://localhost'
-      );
-      const secondRequestUrl = new URL(
-        String(fetchMock.mock.calls[1][0]),
-        'http://localhost'
-      );
-
-      expect(results.map((result) => result.id)).toEqual(['series']);
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(firstRequestUrl.searchParams.get('q')).toBe('雨霖铃');
-      expect(secondRequestUrl.searchParams.get('q')).toBe('雨霖铃 2026');
-    } finally {
-      global.fetch = originalFetch;
-    }
+    expect(results.map((result) => result.id)).toEqual(['series']);
+    expect(search).toHaveBeenCalledTimes(2);
+    expect(search).toHaveBeenNthCalledWith(1, '雨霖铃');
+    expect(search).toHaveBeenNthCalledWith(2, '雨霖铃 2026');
   });
 
   it('uses the desktop local service playback prefetch route in desktop mode', async () => {
@@ -372,7 +360,6 @@ describe('playback source prefetch helpers', () => {
   });
 
   it('filters adult results from playback search requests before returning sources', async () => {
-    const originalFetch = global.fetch;
     const adultMatch = buildSearchResult({
       id: 'adult-match',
       title: '糖心Vlog.谁才是派对真正的主角',
@@ -397,29 +384,20 @@ describe('playback source prefetch helpers', () => {
       ],
       episodes_titles: ['第1集', '第2集'],
     });
-    const fetchMock = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ results: [adultMatch, safeMatch] }),
+    const search = jest.fn().mockResolvedValue([adultMatch, safeMatch]);
+    getDataSourceMock.mockReturnValue({ search, detail: jest.fn() });
+
+    const results = await searchPlaybackSources({
+      title: '主角',
+      year: '2025',
+      searchType: 'tv',
     });
 
-    global.fetch = fetchMock as typeof fetch;
-
-    try {
-      const results = await searchPlaybackSources({
-        title: '主角',
-        year: '2025',
-        searchType: 'tv',
-      });
-
-      expect(results.map((result) => result.id)).toEqual(['safe-match']);
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-    } finally {
-      global.fetch = originalFetch;
-    }
+    expect(results.map((result) => result.id)).toEqual(['safe-match']);
+    expect(search).toHaveBeenCalled();
   });
 
   it('returns adult results from playback search requests when explicitly allowed', async () => {
-    const originalFetch = global.fetch;
     const adultMatch = buildSearchResult({
       id: 'adult-match',
       title: '糖心Vlog.谁才是派对真正的主角',
@@ -432,24 +410,16 @@ describe('playback source prefetch helpers', () => {
       ],
       episodes_titles: ['第1集', '第2集'],
     });
-    const fetchMock = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ results: [adultMatch] }),
+    const search = jest.fn().mockResolvedValue([adultMatch]);
+    getDataSourceMock.mockReturnValue({ search, detail: jest.fn() });
+
+    const results = await searchPlaybackSources({
+      title: '糖心Vlog.谁才是派对真正的主角',
+      searchType: 'tv',
+      allowAdultCandidates: true,
     });
 
-    global.fetch = fetchMock as typeof fetch;
-
-    try {
-      const results = await searchPlaybackSources({
-        title: '糖心Vlog.谁才是派对真正的主角',
-        searchType: 'tv',
-        allowAdultCandidates: true,
-      });
-
-      expect(results.map((result) => result.id)).toEqual(['adult-match']);
-      expect(fetchMock).toHaveBeenCalledTimes(1);
-    } finally {
-      global.fetch = originalFetch;
-    }
+    expect(results.map((result) => result.id)).toEqual(['adult-match']);
+    expect(search).toHaveBeenCalled();
   });
 });

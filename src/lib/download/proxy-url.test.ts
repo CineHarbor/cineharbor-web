@@ -20,21 +20,21 @@ describe('download proxy url helpers', () => {
         source: 'demo',
         url: 'https://example.com/path/index.m3u8?token=abc',
       })
-    ).toContain('/api/proxy/vod/m3u8?');
+    ).toContain('/media/vod/m3u8?');
 
     expect(
       buildVodProxySegmentUrl({
         source: 'demo',
         url: 'https://example.com/path/001.ts',
       })
-    ).toContain('/api/proxy/vod/segment?');
+    ).toContain('/media/vod/segment?');
 
     expect(
       buildVodProxyKeyUrl({
         source: 'demo',
         url: 'https://example.com/path/key.bin',
       })
-    ).toContain('/api/proxy/vod/key?');
+    ).toContain('/media/vod/key?');
   });
 
   it('recognizes manifest urls and keeps proxied urls stable', () => {
@@ -59,7 +59,7 @@ describe('download proxy url helpers', () => {
       'https://example.com/video/master.m3u8'
     );
 
-    expect(normalizedUrl).toContain('/api/proxy/vod/m3u8?');
+    expect(normalizedUrl).toContain('/media/vod/m3u8?');
     expect(normalizedUrl).toContain('source=demo');
   });
 
@@ -70,7 +70,7 @@ describe('download proxy url helpers', () => {
         url: 'https://example.com/video/master.m3u8',
       })
     ).toBe(
-      '/api/proxy/vod/m3u8?source=demo&url=https%3A%2F%2Fexample.com%2Fvideo%2Fmaster.m3u8'
+      'http://127.0.0.1:11473/media/vod/m3u8?source=demo&url=https%3A%2F%2Fexample.com%2Fvideo%2Fmaster.m3u8'
     );
   });
 

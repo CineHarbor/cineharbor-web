@@ -80,6 +80,7 @@ describe("CoreAddonClient", () => {
       douban: "http://127.0.0.1:11471",
       vod: "http://127.0.0.1:11473",
       live: "http://127.0.0.1:11472",
+      bangumi: "http://127.0.0.1:11474",
     });
   });
 });

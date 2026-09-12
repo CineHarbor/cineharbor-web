@@ -33,6 +33,7 @@ export interface AddonProviderConfig {
   douban: string;
   vod: string;
   live: string;
+  bangumi: string;
 }
 
 export function getAddonProviderConfig(): AddonProviderConfig {
@@ -40,6 +41,7 @@ export function getAddonProviderConfig(): AddonProviderConfig {
     douban: process.env.NEXT_PUBLIC_DOUBAN_ADDON_URL ?? "http://127.0.0.1:11471",
     vod: process.env.NEXT_PUBLIC_VOD_ADDON_URL ?? "http://127.0.0.1:11473",
     live: process.env.NEXT_PUBLIC_LIVE_ADDON_URL ?? "http://127.0.0.1:11472",
+    bangumi: process.env.NEXT_PUBLIC_BANGUMI_ADDON_URL ?? "http://127.0.0.1:11474",
   };
 }
 

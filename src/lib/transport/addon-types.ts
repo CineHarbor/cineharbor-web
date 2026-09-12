@@ -13,6 +13,7 @@ export interface AddonMeta {
   poster?: string;
   description?: string;
   year?: string;
+  releaseInfo?: string;
   rating?: string;
   genres?: string[];
 }

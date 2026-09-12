@@ -30,7 +30,7 @@
 - ✅ P3.d Service Worker：`runtime-caching.js`（core-wasm 固化 + addon 元数据 SWR + /api 排 auth/proxy），jest 3 绿 + 全仓 549 测绿。
 - ✅ live 页数据源：`src/lib/core/live/addon-live-client.ts`（listSources/listChannels/getStreamUrl，依赖倒置，jest 4 绿，多源 aware）。
 - ✅ live 页切面接好（首个页面级）：`live/page.tsx` + `addon-live-source-factory.ts`，`NEXT_PUBLIC_USE_ADDON_LIVE`（默认 off）切源/频道/播放到 addon 直连；typecheck 0 错 + jest 555 绿。
-- ⏭ Matt `NEXT_PUBLIC_USE_ADDON_LIVE=true pnpm dev` 交互验证 live 页 → 验证后退役 `/api/live/*` + `/api/proxy/m3u8|segment|key`。
+- ~~Matt `NEXT_PUBLIC_USE_ADDON_LIVE=true pnpm dev` 交互验证 live 页~~ ✅ 已执行（直接删授权）——`USE_ADDON_LIVE` 默认转正 + `/api/live/*` 已删。
 - ✅ 点播 shape-bridge 补全：`streams-bridge.ts`（streamsToEpisodes + buildDetail，jest 3 绿）。
 - ✅ 退役 local-service `/addons` 聚合客户端：`transport/addon-client.ts` 删除，协议 DTO 迁 `addon-types.ts`（jest 558 绿）。
 - ✅ 点播两步数据源：`addon-content-data-source.ts`（search 预览 / detail=meta+stream，jest 2 绿）；口径已定（Stremio 两步，Matt 指令）。
@@ -38,5 +38,10 @@
 - ✅ 点播 id/source 还原：`addon-content-data-source.ts`（parseVodId/reconcileVodResult，jest 2 绿）——复合 id → 原生 `{id=vid, source=站点key}`，搜索/详情均兼容原生导航。
 - ✅ 点播详情/播放页切面接好：`content-discovery-client.ts` `fetchContentDetail` 按 `USE_ADDON_VOD`（默认 off、window 守卫）直连 `detail('movie', vod:{source}:{id})`，四消费方单点收口；typecheck 0 错 + jest 562 绿。点播切面（搜索+详情）至此全通。
 - ✅ 点播跨源浏览器 E2E：`scripts/vod-cross-origin-smoke.mjs` → `VOD_CROSS_ORIGIN_RESULT`（catalog 2 / meta 1 视频 / streams 1 转链）。live+vod 两真实 cross-origin E2E 均过。
-- ⏭ Matt 验证后退役：`/api/search*`（非 ws）+ `/api/detail` + `/api/live/*` + `/api/proxy/*`；prefetch/下载 addon 化归外沿 → 豆瓣 → 账户。
-- ⏭ 数据流切换 + 退役：按门面 `docs/plans/web-api-retirement-plan.md` 逐切面执行（媒体代理→直播→点播→豆瓣→账户/历史→鉴权/admin）。addon 核心 parity 已基本到位（复核见 addon-sdk `2026-08-31-addon-parity-audit.md`）；剩外沿功能（douban ratings、live EPG/多源）+ shape-bridge + 页面接线。
+- ~~Matt 验证后退役 `/api/detail` + `/api/live/*`~~ ✅ 已删。
+- **2026-09-12 拍板后执行**（门面 `.agnir/decisions.md`）：
+  1. ✅ 豆瓣搜索页 cutover 到 douban addon；删 `/api/douban/search`（recommends/categories 留 `/api/douban/*`）。
+  2. ✅ 首页番剧日历接 bangumi addon；删 `/api/bangumi/calendar`。
+  3. ✅ `fetchContentSearchResults` / prefetch / DownloadsClient / suggestions 走 vod addon + 客户端成人过滤；删 `/api/search*`。
+  4. ✅ vod `/media/vod/*` 广告过滤 + token 鉴权；下载 URL 恒 addon；删 `/api/proxy/vod/*`。logo/image-proxy 仍留原生。
+- ⏭ 账户/admin/鉴权不在本目标。douban-imdb-rt P2/P3 与桌面 updater 首次验证后置。

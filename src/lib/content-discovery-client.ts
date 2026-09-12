@@ -1,48 +1,18 @@
-import { apiFetch, ApiFetchOptions } from '@/lib/transport/api-client';
-import { buildApiUrl } from '@/lib/transport/endpoint';
-import { SearchResult } from '@/lib/types';
-// addon 直连工厂（模块加载不触碰浏览器 API；worker 仅在调用 site 且浏览器侧才 spawn）。
 import {
   getAddonContentDataSource,
 } from '@/lib/core/content/addon-content-data-source-factory';
+import {
+  buildSuggestions,
+  type ContentSuggestion,
+} from '@/lib/core/content/suggestions';
+import { getRuntimeConfig } from '@/lib/runtime-config';
+import type { ApiFetchOptions } from '@/lib/transport/api-client';
+import { SearchResult } from '@/lib/types';
+import { filterAdultContentResults } from '@/lib/yellow';
 
-export interface ContentSuggestion {
-  text: string;
-  type: 'exact' | 'related' | 'suggestion';
-  score: number;
-}
-
-interface ContentSearchResponse {
-  results?: SearchResult[];
-  error?: string;
-}
-
-interface ContentSuggestionsResponse {
-  suggestions?: ContentSuggestion[];
-  error?: string;
-}
+export type { ContentSuggestion };
 
 type ContentRequestOptions = Omit<ApiFetchOptions, 'searchParams'>;
-
-async function parseJsonResponse<T>(response: Response): Promise<T> {
-  return response.json() as Promise<T>;
-}
-
-function resolveContentErrorMessage(
-  response: Response,
-  payload: { error?: string } | null | undefined,
-  fallbackMessage: string
-): string {
-  if (payload?.error?.trim()) {
-    return payload.error;
-  }
-
-  if (!response.ok) {
-    return fallbackMessage;
-  }
-
-  return '';
-}
 
 export async function fetchContentDetail(
   params: {
@@ -69,54 +39,19 @@ export async function fetchContentSearchResults(
     allowAdultResults?: boolean;
   } = {}
 ): Promise<SearchResult[]> {
-  const { allowAdultResults, ...requestOptions } = options;
-  const response = await apiFetch('/search', {
-    ...requestOptions,
-    searchParams: {
-      q: query,
-      adult: allowAdultResults ? '1' : undefined,
-    },
-  });
-  const payload = await parseJsonResponse<ContentSearchResponse>(response);
-
-  const errorMessage = resolveContentErrorMessage(
-    response,
-    payload,
-    '获取搜索结果失败'
-  );
-  if (errorMessage) {
-    throw new Error(errorMessage);
+  const { allowAdultResults } = options;
+  const results = await getAddonContentDataSource().search(query);
+  const disableFilter = getRuntimeConfig().DISABLE_YELLOW_FILTER === true;
+  if (allowAdultResults || disableFilter) {
+    return results;
   }
-
-  return Array.isArray(payload.results) ? payload.results : [];
+  return filterAdultContentResults(results);
 }
 
 export async function fetchContentSuggestions(
   query: string,
   options: ContentRequestOptions = {}
 ): Promise<ContentSuggestion[]> {
-  const response = await apiFetch('/search/suggestions', {
-    ...options,
-    searchParams: {
-      q: query,
-    },
-  });
-  const payload = await parseJsonResponse<ContentSuggestionsResponse>(response);
-
-  const errorMessage = resolveContentErrorMessage(
-    response,
-    payload,
-    '获取搜索建议失败'
-  );
-  if (errorMessage) {
-    throw new Error(errorMessage);
-  }
-
-  return Array.isArray(payload.suggestions) ? payload.suggestions : [];
-}
-
-export function buildContentSearchStreamUrl(query: string): string {
-  return buildApiUrl('/search/ws', {
-    q: query,
-  });
+  const results = await fetchContentSearchResults(query, options);
+  return buildSuggestions(query, results);
 }
