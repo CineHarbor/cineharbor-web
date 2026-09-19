@@ -1,0 +1,115 @@
+name: Apply reviewed Web release checkpoint
+on:
+  push:
+    branches: ['release/web-quality-1.0.0']
+permissions:
+  contents: read
+concurrency:
+  group: reviewed-web-release-checkpoint
+  cancel-in-progress: false
+jobs:
+  apply:
+    if: ${{ github.event.deleted == false }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify immutable baseline and bounded reviewed source edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, hashlib, json, lzma, os, pathlib, re, subprocess
+          root = pathlib.Path.cwd().resolve()
+          request = '.release-request/web-quality-1.0.0/'
+          workflow = '.github/workflows/apply-reviewed-release-patch.yml'
+          spec = json.loads((root / request / 'spec.json').read_text())
+          if spec['parts'] != 3 or spec['file_count'] != 63 or not re.fullmatch(r'[0-9a-f]{40}', spec['base']):
+              raise SystemExit('Invalid reviewed request shape')
+          parts = [request + f'part-{i}.b64' for i in range(spec['parts'])]
+          transport = [request + 'spec.json', *parts]
+          def git(*args):
+              return subprocess.check_output(['git', *args], text=True).strip()
+          subprocess.run(['git', 'merge-base', '--is-ancestor', spec['base'], 'HEAD'], check=True)
+          if git('ls-remote', 'origin', 'refs/heads/main').split()[0] != spec['base']:
+              raise SystemExit('AGNIR_CHECKPOINT_CONFLICT: main advanced')
+          if set(git('diff', '--name-only', spec['base'], 'HEAD').splitlines()) != set(transport + [workflow]):
+              raise SystemExit('Unexpected preparation changes')
+          encoded = ''.join((root / part).read_text().strip() for part in parts)
+          if len(encoded) > 100000:
+              raise SystemExit('Oversized source transport')
+          decoder = lzma.LZMADecompressor(memlimit=256 * 1024 * 1024)
+          raw = decoder.decompress(base64.b64decode(encoded, validate=True), max_length=1000001)
+          if len(raw) > 1000000 or not decoder.eof or decoder.unused_data:
+              raise SystemExit('Invalid bounded source payload')
+          if hashlib.sha256(raw).hexdigest() != spec['payload_sha256']:
+              raise SystemExit('Reviewed source checksum mismatch')
+          entries = json.loads(raw)['files']
+          paths = [entry['path'] for entry in entries]
+          if len(paths) != spec['file_count'] or len(paths) != len(set(paths)):
+              raise SystemExit('Invalid reviewed source path set')
+          outputs = []
+          for entry in entries:
+              relative = pathlib.PurePosixPath(entry['path'])
+              if relative.is_absolute() or '..' in relative.parts or not relative.parts or relative.parts[0] in {'.git', '.github', '.release-request'}:
+                  raise SystemExit('Forbidden reviewed source path')
+              path = root / relative
+              if path.is_symlink() or not path.resolve().is_relative_to(root):
+                  raise SystemExit('Reviewed source boundary violation')
+              if entry['before'] is None:
+                  if path.exists():
+                      raise SystemExit(f'Expected absent path: {relative}')
+                  before = b''
+              else:
+                  before = path.read_bytes()
+                  if hashlib.sha256(before).hexdigest() != entry['before']:
+                      raise SystemExit(f'Baseline hash mismatch: {relative}')
+              lines = before.decode('utf-8').splitlines(keepends=True)
+              previous = 0
+              for start, end, replacement in entry['edits'] or []:
+                  if type(start) is not int or type(end) is not int or not isinstance(replacement, str) or not previous <= start <= end <= len(lines):
+                      raise SystemExit('Invalid ordered line edit')
+                  previous = end
+              for start, end, replacement in reversed(entry['edits'] or []):
+                  lines[start:end] = [replacement]
+              after = ''.join(lines).encode('utf-8') if entry['after'] is not None else None
+              if after is not None and hashlib.sha256(after).hexdigest() != entry['after']:
+                  raise SystemExit(f'Result hash mismatch: {relative}')
+              outputs.append((path, after))
+          for path, after in outputs:
+              if after is None:
+                  path.unlink()
+              else:
+                  path.parent.mkdir(parents=True, exist_ok=True)
+                  path.write_bytes(after)
+          subprocess.run(['git', 'add', '--', *paths], check=True)
+          if set(git('diff', '--cached', '--name-only').splitlines()) != set(paths):
+              raise SystemExit('Unexpected source modifications')
+          subprocess.run(['git', 'rm', '--', *transport], check=True)
+          subprocess.run(['git', 'diff', '--cached', '--check'], check=True)
+          if set(git('diff', '--cached', '--name-only').splitlines()) != set(paths + transport):
+              raise SystemExit('Unexpected staged publication')
+          (pathlib.Path(os.environ['RUNNER_TEMP']) / 'reviewed-message.txt').write_text(spec['message'] + '\n')
+          print('Verified reviewed source:', spec['payload_sha256'], 'files:', len(paths))
+          PY
+      - name: Publish source checkpoint to preparation branch only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          current=$(git ls-remote origin refs/heads/release/web-quality-1.0.0 | cut -f1)
+          test "$current" = "$GITHUB_SHA" || { echo 'AGNIR_CHECKPOINT_CONFLICT'; exit 1; }
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -F "$RUNNER_TEMP/reviewed-message.txt"
+          git -c credential.helper='!gh auth git-credential' push origin HEAD:refs/heads/release/web-quality-1.0.0
+          published=$(git ls-remote origin refs/heads/release/web-quality-1.0.0 | cut -f1)
+          test "$published" = "$(git rev-parse HEAD)"
+          printf 'Verified preparation source: `%s`\n\nMain and public releases were not changed. Required browser CI follows explicit main promotion.\n' "$published" >> "$GITHUB_STEP_SUMMARY"
