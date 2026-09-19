@@ -46,7 +46,7 @@ function startFixtureServer() {
       const url = new URL(request.url || '/', origin);
       response.setHeader('access-control-allow-origin', '*');
 
-      if (url.pathname === '/douban-search') {
+      if (url.pathname === '/movie/subject_search') {
         response.setHeader('content-type', 'text/html; charset=utf-8');
         response.end(
           '<!doctype html><html><body><script>window.__DATA__=' +
@@ -137,7 +137,7 @@ function spawnDoubanAddon(fixtureOrigin) {
     root: addonSdkRoot,
     env: {
       CINEHARBOR_ADDON_PORT: '11471',
-      CINEHARBOR_DOUBAN_SEARCH_BASE_URL: fixtureOrigin + '/douban-search',
+      CINEHARBOR_DOUBAN_SEARCH_BASE_URL: fixtureOrigin,
     },
   });
 }
