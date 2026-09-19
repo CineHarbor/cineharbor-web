@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { isAllowedHost, normalizeHost } from '@/lib/security/allowed-hosts';
+import { isPublicRequestPath } from '@/lib/security/public-routes';
 const AUTH_SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 type AuthRole = 'owner' | 'admin' | 'user';
@@ -37,7 +38,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // 跳过不需要认证的路径
-  if (shouldSkipAuth(pathname)) {
+  if (isPublicRequestPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -144,42 +145,6 @@ function handleAuthFailure(
   const fullUrl = `${pathname}${request.nextUrl.search}`;
   loginUrl.searchParams.set('redirect', fullUrl);
   return NextResponse.redirect(loginUrl);
-}
-
-// 判断是否需要跳过认证的路径
-function shouldSkipAuth(pathname: string): boolean {
-  const skipExactPaths = new Set([
-    '/login',
-    '/warning',
-    '/favicon.ico',
-    '/robots.txt',
-    '/manifest.json',
-    '/sw.js',
-    '/core-worker.js',
-    '/core-storage.js',
-  ]);
-
-  if (skipExactPaths.has(pathname)) {
-    return true;
-  }
-
-  const skipPaths = [
-    '/_next',
-    '/_offline',
-    '/workbox-',
-    '/worker-',
-    '/icons/',
-    '/wasm/',
-    '/logo.png',
-    '/screenshot.png',
-    '/api/login',
-    '/api/register',
-    '/api/logout',
-    '/api/cron',
-    '/api/server-config',
-  ];
-
-  return skipPaths.some((path) => pathname.startsWith(path));
 }
 
 // 配置middleware匹配规则

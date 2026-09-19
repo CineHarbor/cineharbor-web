@@ -155,7 +155,9 @@ async function main() {
     assert.equal(result.firstId, 'douban:3541415');
     assert.match(result.firstTitle, /星际穿越/);
     assert.equal(result.firstYear, '2014');
-    assert.equal(result.firstRating, 9.4);
+    // The shared protocol intentionally serializes rating as an optional string.
+    assert.equal(typeof result.firstRating, 'string');
+    assert.equal(result.firstRating, '9.4');
     console.log(
       `DOUBAN_CROSS_ORIGIN_RESULT=${JSON.stringify(evaluation.result.value)}`
     );
