@@ -9,7 +9,9 @@ export const requiredSmokes = [
   'addon-cross-origin-smoke',
   'vod-cross-origin-smoke',
   'douban-cross-origin-smoke',
+  'bangumi-cross-origin-smoke',
   'vod-media-proxy-smoke',
+  'product-path-smoke',
   'pwa-production-smoke',
 ];
 
