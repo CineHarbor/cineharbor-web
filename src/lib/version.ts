@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
 
-const CURRENT_VERSION = '200.0.1';
+const CURRENT_VERSION = '1.0.0';
 
 export { CURRENT_VERSION };

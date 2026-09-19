@@ -1,25 +1,30 @@
 # cineharbor-web Current State
 
-Target **CineHarbor 1.0.0**; release preparation in progress. **RELEASE_READY = false; PUBLIC_RELEASE_EXECUTED = false.** Canonical scope and acceptance matrix are in the facade `docs/releases/1.0.0/`.
+Target **CineHarbor 1.0.0 public release**; hard release gates remain enforced. **RELEASE_READY = false; PUBLIC_RELEASE_EXECUTED = false.** Canonical scope and acceptance matrix are in the facade `docs/releases/1.0.0/`.
 
-## Architecture and retained boundaries
+## Architecture and validated baseline
 
-Next.js Web/PWA uses the in-process WASM core and remote Douban/Bangumi/Live/VOD/media services for migrated content paths under ADR-0006. Account/admin/profile persistence and release endpoints may remain; remaining content APIs/proxies still require consumer classification and retirement. Historical native-RPC/dual-data-plane targets are superseded, but complete retirement and complete product acceptance are not claimed.
+Next.js Web/PWA uses the in-process WASM core and remote Douban/Bangumi/Live/VOD/media services for migrated content paths under ADR-0006. Account/admin/profile persistence and release endpoints may remain. Remaining content APIs/proxies still require consumer classification and retirement.
 
-Integration sources are pinned in `ci/dependencies.json`. The WASM builder validates the Cargo.lock-matched bridge CLI, uses locked release builds, respects Cargo's actual target directory and stages generated assets with metadata. Generated WASM/PWA output is not tracked. Worker RPC deadlines/disposal, retryable IndexedDB errors, script-safe runtime configuration, system fonts and explicit PWA update activation are implemented. Public Worker/WASM dependencies can load before login; account authentication remains in place. PWA runtime caching excludes private APIs, credentials and media, and preserves intentional download storage and IndexedDB during cache migration.
+At predecessor main `9fd1fc0b94ca72578dec2f0afbf3cea97e70cccc`, CI runs `35438906907` and `35439140734` both succeeded. They covered frozen install, typecheck, strict lint, all Jest/tooling tests, a real Rust/WASM production build, WASM browser smoke, Live/VOD/Douban cross-origin addon smokes, VOD media rewriting and a real installed PWA service-worker update preserving IndexedDB/local settings. Those passes remain valid for the predecessor only.
 
-## Desktop export checkpoint — 2026-09-19
+## Release user-path defect found — 2026-09-19
 
-The former exporter moved live API/middleware/build directories out of the source tree and deleted output before successful validation. It now builds in a unique isolated sibling workspace, leaves original source and manifests untouched, uses the declared Core directory, links installed dependencies, invokes Node entrypoints directly on every platform and atomically replaces only a complete export. Failures preserve previous output. Concurrent exporters cannot steal the build lock. A hard-killed process may leave a lock; confirm that no exporter owns it before removing that lock, never delete it blindly.
+Release analysis found that the VOD catalog cutover correctly returns Stremio metadata previews with `episodes=[]`, but `searchPlaybackSources` treated those previews as final playable `SearchResult` objects. Type filtering also inferred movie/TV solely from episode count. Therefore the actual title-only path used by Douban/search cards could reject a valid preview or enter `/play` without ever hydrating meta+stream.
 
-At baseline `f5c9af95f6c06ef63f8739a37c385cca10ce9c73` plus the exporter candidate, an actual local Rust/WASM and Next.js Desktop production export succeeded, including type/lint validation and all 17 static pages. All 674 Jest tests in 132 suites and the then-current 27 Node tooling tests passed with zero skips. See `.agnir/evidence/2026-09-19-isolated-desktop-export.md`.
+The release branch repairs the data plane without restoring legacy APIs:
+- infer movie/series from Stremio metadata when a catalog preview has no streams;
+- hydrate selected preview candidates through the existing addon `meta + stream` path before returning playback sources;
+- preserve already-rich results unchanged;
+- let content detail prefer a protocol type hint and fall back to the alternate VOD type;
+- pin Addon SDK `e5f7a3a289ceb978d559910b5bf9f176809ada04`, which adds deterministic Bangumi upstream injection while keeping bgm.tv as production default.
 
-## PWA precache repair — 2026-09-19
+Unit regressions cover preview hydration and protocol type fallback. New runtime gates add deterministic Bangumi cross-origin validation and a real production Next.js + Chrome product-path smoke covering authentication redirect, title search → card navigation → hydrated playback detail, search-history/favorite persistence, homepage/favorites rendering, Live channel switching, downloads error/settings persistence and explicit bad-playback error UI.
 
-Run `35437473185` at main `a8aff083638adc4d77ec6c7729599c654547e77d` passed frozen install, typecheck, strict lint, unit/tooling tests, actual WASM/production build and five integration scripts. PWA alone failed because next-pwa precached the unserved App Router build manifest. Further local reproduction found an incorrectly escaped `%5Foffline` chunk URL. Both build-manifest defects are now corrected without removing acceptance assertions, weakening authentication or excluding real application assets.
+No legacy `/api/search` or `/api/detail` fallback is reintroduced. The branch must pass complete PR CI and then two complete successful main runs before becoming final release evidence.
 
-The changed candidate passed a real local production build (56 pages and type/lint checks), all 30 tooling tests and the complete precache-asset HTTP check. Local browser navigation is blocked by administrator policy, so full installed-SW/update acceptance is pending actual GitHub CI. See `.agnir/evidence/2026-09-19-pwa-precache-assets.md` for evidence and limitations.
+## Remaining obligations
 
-These results do not certify native installation, signed updater, deployed services or complete browser product E2E. Remote CI must be observed at the new main revision. RT real-feed integration and expanded experimental music/follow/cache scope remain post-1.0; existing supported paths must not regress.
+Desktop signed RC/updater acceptance, production services/deployment smoke, remaining API retirement classification, security/license/brand/version alignment and final publication are still separate blockers.
 
 Project identity `urn:cineharbor:project:cineharbor-web`, lineage `urn:cineharbor:lineage:cineharbor-web`, Agnir Core/Profile 1.0 / repository-filesystem/1.0 and operations 1.0.2 at `b5626394ec40a5cb7a28c01892acde07cc0adc8e` are unchanged. License baseline: CC-BY-NC-SA-4.0.

@@ -60,6 +60,36 @@ describe('content discovery client', () => {
     expect(detailMock).toHaveBeenCalledWith('movie', 'vod:demo:1001');
   });
 
+  it('uses a series hint first and falls back across protocol detail types', async () => {
+    const payload = {
+      id: 'series-1',
+      source: 'demo',
+      title: '测试剧集',
+      episodes: ['https://example.com/series/1.m3u8'],
+      episodes_titles: ['第1集'],
+    };
+    const detailMock = jest
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(payload);
+    getDataSourceMock.mockReturnValue({ detail: detailMock, search: jest.fn() });
+
+    await expect(
+      fetchContentDetail({ source: 'demo', id: 'series-1', type: 'series' })
+    ).resolves.toEqual(payload);
+
+    expect(detailMock).toHaveBeenNthCalledWith(
+      1,
+      'series',
+      'vod:demo:series-1'
+    );
+    expect(detailMock).toHaveBeenNthCalledWith(
+      2,
+      'movie',
+      'vod:demo:series-1'
+    );
+  });
+
   it('keeps an existing vod: id prefix unchanged', async () => {
     const detailMock = jest.fn().mockResolvedValue({ id: 'x', source: 'demo' });
     getDataSourceMock.mockReturnValue({ detail: detailMock, search: jest.fn() });

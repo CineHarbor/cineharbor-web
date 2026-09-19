@@ -6,6 +6,7 @@ import {
   buildSuggestions,
 } from '@/lib/core/content/suggestions';
 import { getRuntimeConfig } from '@/lib/runtime-config';
+import type { AddonContentType } from '@/lib/transport/addon-types';
 import type { ApiFetchOptions } from '@/lib/transport/api-client';
 import { SearchResult } from '@/lib/types';
 import { filterAdultContentResults } from '@/lib/yellow';
@@ -18,6 +19,7 @@ export async function fetchContentDetail(
   params: {
     source: string;
     id: string;
+    type?: Extract<AddonContentType, 'movie' | 'series'>;
   },
   _options: ContentRequestOptions = {}
 ): Promise<SearchResult> {
@@ -26,11 +28,17 @@ export async function fetchContentDetail(
   const addonId = params.id.startsWith("vod:")
     ? params.id
     : `vod:${params.source}:${params.id}`;
-  const result = await getAddonContentDataSource().detail("movie", addonId);
-  if (!result) {
-    throw new Error("获取视频详情失败");
+  const preferredTypes: Array<Extract<AddonContentType, 'movie' | 'series'>> =
+    params.type === 'series' ? ['series', 'movie'] : ['movie', 'series'];
+
+  for (const type of preferredTypes) {
+    const result = await getAddonContentDataSource().detail(type, addonId);
+    if (result) {
+      return result;
+    }
   }
-  return result;
+
+  throw new Error('获取视频详情失败');
 }
 
 export async function fetchContentSearchResults(
