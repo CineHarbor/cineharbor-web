@@ -328,7 +328,21 @@ async function main() {
         }
         await sleep(100);
       }
-      throw new Error('Timed out waiting for ' + label + (lastError ? ': ' + lastError : ''));
+      let diagnostic = null;
+      try {
+        diagnostic = await evaluate(
+          "(() => ({ href: location.href, text: (document.body?.innerText || '').slice(0, 4000), html: (document.body?.innerHTML || '').slice(0, 2000) }))()"
+        );
+      } catch (error) {
+        diagnostic = { diagnosticError: error.message };
+      }
+      throw new Error(
+        'Timed out waiting for ' +
+          label +
+          (lastError ? ': ' + lastError : '') +
+          '; browser=' +
+          JSON.stringify(diagnostic)
+      );
     };
 
     const bodyContains = (text, label = text, timeoutMs) =>
