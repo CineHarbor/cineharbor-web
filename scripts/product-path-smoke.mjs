@@ -331,7 +331,7 @@ async function main() {
       let diagnostic = null;
       try {
         diagnostic = await evaluate(
-          "(() => ({ href: location.href, text: (document.body?.innerText || '').slice(0, 4000), html: (document.body?.innerHTML || '').slice(0, 2000) }))()"
+          "(() => ({ href: location.href, text: (document.body?.innerText || '').slice(0, 4000), resources: performance.getEntriesByType('resource').map((entry) => entry.name).filter((name) => name.includes('11473')).slice(-40), html: (document.body?.innerHTML || '').slice(0, 2000) }))()"
         );
       } catch (error) {
         diagnostic = { diagnosticError: error.message };
@@ -370,6 +370,44 @@ async function main() {
       url: origin + '/',
       httpOnly: false,
       sameSite: 'Lax',
+    });
+
+    await navigate('/robots.txt');
+    const directVod = await evaluate(`(async () => {
+      function post(worker, op, args) {
+        return new Promise((resolve, reject) => {
+          const id = Math.floor(Math.random() * 1e9);
+          const onMessage = (event) => {
+            if (!event.data || event.data.id !== id) return;
+            worker.removeEventListener('message', onMessage);
+            event.data.ok ? resolve(event.data.value) : reject(new Error(event.data.error));
+          };
+          worker.addEventListener('message', onMessage);
+          worker.postMessage({ id, op, args });
+        });
+      }
+      const worker = new Worker('/core-worker.js', { type: 'module' });
+      try {
+        const base = 'http://127.0.0.1:11473';
+        const catalog = JSON.parse(await post(worker, 'catalog', [base, 'movie', 'search', 'search', '星际穿越', null]));
+        const firstId = catalog.metas[0]?.id || '';
+        const meta = firstId ? JSON.parse(await post(worker, 'meta', [base, 'movie', firstId])) : null;
+        const streams = firstId ? JSON.parse(await post(worker, 'streams', [base, 'movie', firstId])) : null;
+        return {
+          count: catalog.metas.length,
+          firstId,
+          metaName: meta?.meta?.name || '',
+          streamCount: streams?.streams?.length || 0,
+        };
+      } finally {
+        worker.terminate();
+      }
+    })()`);
+    assert.deepEqual(directVod, {
+      count: 1,
+      firstId: 'vod:mock:101',
+      metaName: '星际穿越',
+      streamCount: 1,
     });
 
     await navigate('/search?q=' + encodeURIComponent('星际穿越'));
