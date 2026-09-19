@@ -1,91 +1,89 @@
 #!/usr/bin/env node
-// 桌面目标（NEXT_BUILD_TARGET=desktop）静态导出，产出 desktop-shell-dist，
-// 供 cineharbor-desktop 的 Tauri 壳作 frontendDist 使用。
-// 静态导出无法物化动态 API/媒体路由，故构建期暂移出。
-
-import { cpSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+// Export in an isolated sibling checkout; never move or remove live Web source.
 import { execFileSync } from 'node:child_process';
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, renameSync, rmSync, symlinkSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { WEB_ROOT, resolveCoreDirectory } from './build-core-wasm.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(__dirname, '..');
-const outputDir = join(projectRoot, 'desktop-shell-dist');
-const desktopDistDir = join(projectRoot, '.next-desktop');
-const tempDir = join(projectRoot, '.desktop-build-temp');
+const OMIT = new Set(['.git', '.agnir', '.github', 'node_modules', 'desktop-shell-dist', 'out', 'coverage', 'test-results']);
 
-const desktopEnv = {
-  ...process.env,
-  NEXT_BUILD_TARGET: 'desktop',
-  NEXT_PUBLIC_APP_TARGET: process.env.NEXT_PUBLIC_APP_TARGET || 'desktop',
-  NEXT_PUBLIC_STORAGE_TYPE:
-    process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage',
-  NEXT_PUBLIC_API_BASE_URL:
-    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787',
-  NEXT_PUBLIC_MEDIA_PROXY_BASE_URL:
-    process.env.NEXT_PUBLIC_MEDIA_PROXY_BASE_URL || 'http://127.0.0.1:8787',
-  NEXT_PUBLIC_FLUID_SEARCH: process.env.NEXT_PUBLIC_FLUID_SEARCH || 'true',
-  NEXT_PUBLIC_ENABLE_ADMIN_PANEL:
-    process.env.NEXT_PUBLIC_ENABLE_ADMIN_PANEL || 'false',
-};
-
-const temporarilyMovedPaths = [];
-
-function moveAside(relativePath, tempName) {
-  const sourcePath = join(projectRoot, relativePath);
-  if (!existsSync(sourcePath)) return;
-  const targetPath = join(tempDir, tempName);
-  mkdirSync(dirname(targetPath), { recursive: true });
-  rmSync(targetPath, { force: true, recursive: true });
-  renameSync(sourcePath, targetPath);
-  temporarilyMovedPaths.push({ sourcePath, targetPath });
+export function shouldCopy(relativePath) {
+  const normalized = relativePath.split(path.sep).join('/');
+  const first = normalized.split('/')[0];
+  return !OMIT.has(first) && !first.startsWith('.next') &&
+    !first.startsWith('.desktop') && !first.endsWith('.tsbuildinfo') &&
+    !['src/app/api', 'src/app/media', 'src/middleware.ts'].some(
+      (entry) => normalized === entry || normalized.startsWith(`${entry}/`)
+    );
 }
 
-function restoreAll() {
-  for (const entry of temporarilyMovedPaths.reverse()) {
-    if (!existsSync(entry.targetPath)) continue;
-    rmSync(entry.sourcePath, { force: true, recursive: true });
-    mkdirSync(dirname(entry.sourcePath), { recursive: true });
-    renameSync(entry.targetPath, entry.sourcePath);
+export function buildDesktopFrontend({ projectRoot = WEB_ROOT, env = process.env, run = execFileSync } = {}) {
+  const root = realpathSync(projectRoot);
+  const modules = path.join(root, 'node_modules');
+  if (!existsSync(path.join(root, 'package.json')) || !existsSync(modules)) {
+    throw new Error('A Web checkout with installed locked dependencies is required');
   }
-  rmSync(tempDir, { force: true, recursive: true });
+  const output = path.join(root, 'desktop-shell-dist');
+  if (existsSync(output) && (lstatSync(output).isSymbolicLink() || !lstatSync(output).isDirectory())) {
+    throw new Error('Refusing to replace a non-directory desktop output');
+  }
+  const lock = path.join(root, '.desktop-build.lock');
+  // An existing lock is not deleted: it may belong to another active exporter.
+  mkdirSync(lock);
+  let scratch;
+  try {
+    scratch = mkdtempSync(path.join(path.dirname(root), '.cineharbor-desktop-'));
+    for (const entry of readdirSync(root)) {
+      if (!shouldCopy(entry)) continue;
+      cpSync(path.join(root, entry), path.join(scratch, entry), {
+        recursive: true,
+        filter: (source) => shouldCopy(path.relative(root, source)),
+      });
+    }
+    symlinkSync(modules, path.join(scratch, 'node_modules'), process.platform === 'win32' ? 'junction' : 'dir');
+    const desktopEnv = {
+      ...env,
+      CINEHARBOR_CORE_DIR: resolveCoreDirectory(env.CINEHARBOR_CORE_DIR, root),
+      NEXT_BUILD_TARGET: 'desktop',
+      NEXT_DIST_DIR: '.next-desktop',
+      NEXT_PUBLIC_APP_TARGET: 'desktop',
+      NEXT_PUBLIC_STORAGE_TYPE: env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage',
+      NEXT_PUBLIC_API_BASE_URL: env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787',
+      NEXT_PUBLIC_MEDIA_PROXY_BASE_URL: env.NEXT_PUBLIC_MEDIA_PROXY_BASE_URL || 'http://127.0.0.1:8787',
+      NEXT_PUBLIC_FLUID_SEARCH: env.NEXT_PUBLIC_FLUID_SEARCH || 'true',
+      NEXT_PUBLIC_ENABLE_ADMIN_PANEL: env.NEXT_PUBLIC_ENABLE_ADMIN_PANEL || 'false',
+    };
+    const options = { cwd: scratch, env: desktopEnv, stdio: 'inherit', timeout: 30 * 60_000 };
+    run(process.execPath, [path.join(scratch, 'scripts/build-core-wasm.mjs')], options);
+    run(process.execPath, [path.join(scratch, 'scripts/generate-manifest.js')], options);
+    // Execute the installed Node entry point directly, including on Windows.
+    run(process.execPath, [path.join(modules, 'next/dist/bin/next'), 'build'], options);
+    const exported = path.join(scratch, '.next-desktop');
+    if (!existsSync(path.join(exported, 'index.html')) || !existsSync(path.join(exported, '_next'))) {
+      throw new Error('Incomplete desktop static export; previous output has been preserved');
+    }
+    const backup = path.join(scratch, 'previous-output');
+    if (existsSync(output)) renameSync(output, backup);
+    try {
+      renameSync(exported, output);
+    } catch (error) {
+      if (existsSync(backup)) renameSync(backup, output);
+      throw error;
+    }
+    console.log(`Prepared desktop frontend dist at ${output}`);
+    return output;
+  } finally {
+    if (scratch) rmSync(scratch, { recursive: true, force: true });
+    rmSync(lock, { recursive: true, force: true });
+  }
 }
 
-try {
-  execFileSync(
-    process.execPath,
-    [join(projectRoot, 'scripts/build-core-wasm.mjs')],
-    { cwd: projectRoot, env: desktopEnv, stdio: 'inherit' }
-  );
-  moveAside('src/app/api', 'src-app-api');
-  moveAside('src/app/media', 'src-app-media');
-  moveAside('src/middleware.ts', 'src-middleware.ts');
-  moveAside('.next-build', 'next-build');
-
-  rmSync(desktopDistDir, { force: true, recursive: true });
-  rmSync(outputDir, { force: true, recursive: true });
-
-  execFileSync('pnpm', ['gen:manifest'], {
-    cwd: projectRoot,
-    env: desktopEnv,
-    stdio: 'inherit',
-    shell: true,
-  });
-  execFileSync('pnpm', ['exec', 'next', 'build'], {
-    cwd: projectRoot,
-    env: desktopEnv,
-    stdio: 'inherit',
-    shell: true,
-  });
-
-  if (!existsSync(join(desktopDistDir, 'index.html'))) {
-    throw new Error(`Missing exported desktop frontend at ${desktopDistDir}`);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    buildDesktopFrontend();
+  } catch (error) {
+    console.error(`DESKTOP_BUILD_FAILED: ${error.message}`);
+    process.exitCode = 1;
   }
-
-  mkdirSync(outputDir, { recursive: true });
-  cpSync(desktopDistDir, outputDir, { recursive: true });
-
-  console.log(`Prepared desktop frontend dist at ${outputDir}`);
-} finally {
-  restoreAll();
 }

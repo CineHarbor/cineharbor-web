@@ -1,10 +1,7 @@
 # cineharbor-web Next Actions
 
-1. Observe both clean main CI runs: frozen install, typecheck, strict lint, all unit/tooling tests, WASM/production/PWA build, real browser protocol/cross-origin/media/PWA tests. Correct failed gates; missing/skipped/unobserved results are not passes.
-2. Inventory every remaining API and content consumer, retire duplicate content fetch/proxy implementations without removing supported capability, and document control/release API owners/consumers/authentication boundaries.
-3. Complete actual product browser acceptance: search → detail → playback, live switching, Bangumi, Douban, downloads/token/rewriting, offline/error UI and favorites/history/settings persistence. Protocol fixture smokes alone do not complete this matrix.
-4. Validate runtime addon configuration for deployed Web and Desktop and finish safe isolated Desktop static-export packaging.
-5. Complete deployment smoke, dependency/security/license/brand review and final 1.0.0 metadata. Keep scope/state/evidence aligned with exact published revisions. Do not replace the real Desktop updater test with the PWA update test.
-6. After the entire seven-repository release matrix passes, publish a final Agnir checkpoint and fresh-resolve the selected lineage. Final public release remains excluded.
-
-Continue autonomously under the Principal's 2026-09-19 authorization. No developer-specific SSH alias, absolute local cache or uncommitted-initialization prerequisite applies.
+1. Observe two complete CI runs at current main, including frozen installation, typecheck, strict lint, all unit/tooling tests, WASM/production/PWA build and browser/addon/media/PWA integrations. Missing, failed or skipped mandatory results are not passes.
+2. Pin the isolated Desktop exporter in cineharbor-desktop and execute real macOS arm64/x64 and Windows x64 packaging. Local static export is verified; native install and signed old-to-new updater acceptance remain separate.
+3. Classify remaining APIs and consumers, retire duplicate content implementations without capability loss, and document retained control/release API ownership and authentication.
+4. Complete actual product browser acceptance for search/detail/playback, live switching, Bangumi, Douban, downloads/auth/rewriting, errors/offline and persistent user state. Protocol fixtures do not close this matrix.
+5. Validate deployed addon configuration; complete security, dependency, license, brand and version review. Finish the seven-repository evidence-bound release matrix before final checkpoint. Do not publicly release or set RELEASE_READY true prematurely.

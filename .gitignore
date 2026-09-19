@@ -8,6 +8,7 @@
 out
 /desktop-shell-dist
 /.desktop-build-temp
+/.desktop-build.lock
 .env
 .env*.local
 *.tsbuildinfo
