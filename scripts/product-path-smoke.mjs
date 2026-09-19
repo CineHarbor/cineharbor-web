@@ -41,12 +41,19 @@ function vodItem(fixtureOrigin) {
 
 function startFixtureServer() {
   return new Promise((resolve) => {
+    const counters = {
+      doubanSearch: 0,
+      vodSearch: 0,
+      vodDetail: 0,
+      media: 0,
+    };
     const server = http.createServer((request, response) => {
       const origin = 'http://127.0.0.1:' + server.address().port;
       const url = new URL(request.url || '/', origin);
       response.setHeader('access-control-allow-origin', '*');
 
       if (url.pathname === '/movie/subject_search') {
+        counters.doubanSearch += 1;
         response.setHeader('content-type', 'text/html; charset=utf-8');
         response.end(
           '<!doctype html><html><body><script>window.__DATA__=' +
@@ -73,10 +80,12 @@ function startFixtureServer() {
         const ids = url.searchParams.get('ids');
         const wd = url.searchParams.get('wd');
         if (url.searchParams.get('ac') === 'videolist' && ids) {
+          counters.vodDetail += 1;
           response.end(JSON.stringify({ list: ids === '101' ? [vodItem(origin)] : [] }));
           return;
         }
         if (url.searchParams.get('ac') === 'videolist' && wd) {
+          counters.vodSearch += 1;
           response.end(JSON.stringify({ pagecount: 1, list: [vodItem(origin)] }));
           return;
         }
@@ -89,6 +98,7 @@ function startFixtureServer() {
         url.pathname === '/media/live1.m3u8' ||
         url.pathname === '/media/live2.m3u8'
       ) {
+        counters.media += 1;
         response.setHeader('content-type', 'application/vnd.apple.mpegurl');
         response.end(
           '#EXTM3U\n' +
@@ -116,7 +126,7 @@ function startFixtureServer() {
     });
 
     server.listen(0, '127.0.0.1', () =>
-      resolve({ server, port: server.address().port })
+      resolve({ server, port: server.address().port, counters })
     );
   });
 }
@@ -409,6 +419,10 @@ async function main() {
       metaName: '星际穿越',
       streamCount: 1,
     });
+    fixture.counters.doubanSearch = 0;
+    fixture.counters.vodSearch = 0;
+    fixture.counters.vodDetail = 0;
+    fixture.counters.media = 0;
 
     await navigate('/search?q=' + encodeURIComponent('星际穿越'));
     await bodyContains('标题搜索结果', 'search results heading');
@@ -419,75 +433,12 @@ async function main() {
     assert.equal(clicked, true, 'Search result card was not clickable');
 
     await waitFor("location.pathname === '/play'", 'search card navigation to play');
-    await sleep(2_000);
-    const bundledPlaybackSearch = await evaluate(`(async () => {
-      let webpackRequire = null;
-      try {
-        self.webpackChunk_N_E.push([[987654321], {}, (require) => {
-          webpackRequire = require;
-        }]);
-      } catch (error) {
-        return { stage: 'capture-runtime', error: String(error?.message || error) };
-      }
-      if (!webpackRequire?.m) {
-        return { stage: 'capture-runtime', error: 'webpack runtime unavailable' };
-      }
-      const moduleIds = Object.keys(webpackRequire.m).filter((id) => {
-        const factory = String(webpackRequire.m[id]);
-        return factory.includes('桌面播放源预筛选失败') || factory.includes('buildPlaybackSearchQueries');
-      });
-      const exportedFunctions = [];
-      for (const id of moduleIds) {
-        let moduleExports;
-        try {
-          moduleExports = webpackRequire(id);
-        } catch (error) {
-          exportedFunctions.push({ id, requireError: String(error?.message || error) });
-          continue;
-        }
-        for (const [key, value] of Object.entries(moduleExports || {})) {
-          if (typeof value === 'function') {
-            exportedFunctions.push({ id, key, name: value.name || '' });
-            if (value.name === 'searchPlaybackSources') {
-              try {
-                const results = await value({
-                  title: '星际穿越 Interstellar',
-                  year: '2014',
-                  searchType: 'movie',
-                  query: '星际穿越',
-                  doubanId: 3541415,
-                });
-                return {
-                  stage: 'invoked',
-                  moduleIds,
-                  exportKey: key,
-                  count: results.length,
-                  results: results.map((item) => ({
-                    id: item.id,
-                    source: item.source,
-                    title: item.title,
-                    year: item.year,
-                    type_name: item.type_name,
-                    class: item.class,
-                    episodes: item.episodes,
-                  })),
-                };
-              } catch (error) {
-                return {
-                  stage: 'invoke-error',
-                  moduleIds,
-                  exportKey: key,
-                  error: String(error?.message || error),
-                };
-              }
-            }
-          }
-        }
-      }
-      return { stage: 'not-found', moduleIds, exportedFunctions };
-    })()`);
-    console.log('PRODUCT_SEARCH_DEBUG=' + JSON.stringify(bundledPlaybackSearch));
-    await bodyContains('一部关于星际旅行的电影', 'hydrated VOD detail', 60_000);
+    try {
+      await bodyContains('一部关于星际旅行的电影', 'hydrated VOD detail', 60_000);
+    } catch (error) {
+      console.error('PRODUCT_VOD_REQUESTS=' + JSON.stringify(fixture.counters));
+      throw error;
+    }
     const playback = await evaluate(
       "(() => ({ pathname: location.pathname, source: new URL(location.href).searchParams.get('source'), id: new URL(location.href).searchParams.get('id'), title: document.body.innerText.includes('星际穿越'), hasVideo: Boolean(document.querySelector('video')) }))()"
     );
