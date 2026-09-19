@@ -106,6 +106,26 @@ const withPWA = require('next-pwa')({
   cacheStartUrl: false,
   cleanupOutdatedCaches: true,
   publicExcludes: ['!*.d.ts', '!wasm/*.d.ts'],
+  // App Router's server build manifest is not served under /_next/. Precaching
+  // that internal file returns 404 and prevents the Service Worker installing.
+  buildExcludes: [/^app-build-manifest\.json$/],
+  // Webpack asset names are filesystem paths, not already-escaped URLs. A route
+  // folder such as %5Foffline needs %255Foffline on the wire. Only transform an
+  // actual compilation asset; already escaped or non-Webpack URLs are unchanged.
+  manifestTransforms: [
+    async (entries, compilation) => ({
+      manifest: entries.map((entry) => {
+        if (!entry.url.startsWith('/_next/')) return entry;
+        const assetName = entry.url.slice('/_next/'.length);
+        if (!compilation.getAsset(assetName)) return entry;
+        return {
+          ...entry,
+          url: '/_next/' + assetName.split('/').map(encodeURIComponent).join('/'),
+        };
+      }),
+      warnings: [],
+    }),
+  ],
   fallbacks: {
     document: '/_offline',
   },
