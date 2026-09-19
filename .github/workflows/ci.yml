@@ -77,25 +77,14 @@ jobs:
       - name: Build production from sources (including generated WASM and PWA assets)
         run: pnpm build
       - name: Execute every browser/addon integration and report failures without hiding later cases
-        run: |
-          set -uo pipefail
-          mkdir -p test-results
-          result=0
-          for script in wasm-cdp-smoke addon-cross-origin-smoke vod-cross-origin-smoke douban-cross-origin-smoke vod-media-proxy-smoke pwa-production-smoke; do
-            echo "::group::$script"
-            node "scripts/$script.mjs" 2>&1 | tee "test-results/$script.log"
-            code=${PIPESTATUS[0]}
-            printf '%s\n' "$code" > "test-results/$script.exit"
-            if [ "$code" -ne 0 ]; then result=1; fi
-            echo '::endgroup::'
-          done
-          exit "$result"
+        run: node scripts/run-smoke-suite.mjs
       - name: Verify no generated dependency or build configuration was silently committed
+        if: ${{ !cancelled() }}
         run: git diff --exit-code
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: web-runtime-evidence-${{ github.run_id }}
+          name: web-runtime-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             workspace/cineharbor-web/test-results/
             workspace/cineharbor-web/public/wasm/build-info.json
