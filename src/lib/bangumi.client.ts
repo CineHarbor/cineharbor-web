@@ -1,9 +1,9 @@
 'use client';
 
+import type { BangumiCalendarData } from '@/lib/core/bangumi/addon-bangumi-client';
 import {
   getAddonBangumiClient,
 } from '@/lib/core/bangumi/addon-bangumi-source-factory';
-import type { BangumiCalendarData } from '@/lib/core/bangumi/addon-bangumi-client';
 
 export type { BangumiCalendarData };
 

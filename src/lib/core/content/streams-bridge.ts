@@ -7,7 +7,7 @@
 import type { AddonMeta, AddonStream } from "@/lib/transport/addon-types";
 import type { SearchResult } from "@/lib/types";
 
-import { metaToSearchResult, type CatalogBridgeOptions } from "./catalog-bridge";
+import { type CatalogBridgeOptions,metaToSearchResult } from "./catalog-bridge";
 
 export interface EpisodeStreams {
   episodes: string[];

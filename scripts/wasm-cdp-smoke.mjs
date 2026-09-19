@@ -1,123 +1,28 @@
+import assert from 'node:assert/strict';
+import {
+  sleep,
+  spawnServer,
+  launchChrome,
+  readDevToolsPort,
+  Cdp,
+  wsConnect,
+} from './smoke-tools.mjs';
 // 端到端验证：真实 headless Chrome 里加载 module Worker（/core-worker.js → --target web glue），
 // 通过 wasm core 直连 mock addon，跑通四桥（core_version / manifest / catalog / meta / streams）。
 //
-// 依赖：Chrome（Google Chrome.app）+ node 22（globalThis.WebSocket）。运行：
+// 依赖：Chrome/Chromium（支持 CHROME_PATH）+ node 22（globalThis.WebSocket）。运行：
 //   node scripts/wasm-cdp-smoke.mjs
 // 成功 stdout 输出 `SMOKE_RESULT={...}`，失败输出诊断并以非 0 退出。
 
-import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function spawnServer() {
-  return new Promise((resolve, reject) => {
-    const child = spawn("node", ["scripts/wasm-smoke.mjs"], {
-      cwd: webRoot,
-      stdio: ["ignore", "pipe", "inherit"],
-    });
-    let buf = "";
-    child.stdout.on("data", (chunk) => {
-      buf += String(chunk);
-      const m = buf.match(/SMOKE_PORT=(\d+)/);
-      if (m) resolve({ child, port: Number(m[1]) });
-    });
-    child.on("exit", (code) => {
-      if (code !== null && code !== 0 && !buf.includes("SMOKE_PORT")) {
-        reject(new Error(`smoke server exited early: ${code}`));
-      }
-    });
-  });
-}
-
-function launchChrome(userDataDir) {
-  return spawn(
-    CHROME,
-    [
-      "--headless=new",
-      "--no-sandbox",
-      "--disable-gpu",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--disable-dev-shm-usage",
-      "--remote-debugging-port=0",
-      `--user-data-dir=${userDataDir}`,
-      "about:blank",
-    ],
-    { stdio: "ignore" },
-  );
-}
-
-async function readDevToolsPort(userDataDir) {
-  for (let i = 0; i < 100; i++) {
-    const file = path.join(userDataDir, "DevToolsActivePort");
-    if (existsSync(file)) {
-      const [port] = readFileSync(file, "utf8").split("\n");
-      return Number(port);
-    }
-    await sleep(50);
-  }
-  throw new Error("DevToolsActivePort not written");
-}
-
-class Cdp {
-  constructor(ws) {
-    this.ws = ws;
-    this.id = 0;
-    this.pending = new Map();
-    this.listeners = new Map();
-    ws.addEventListener("message", (ev) => this.onMessage(ev.data));
-  }
-
-  onMessage(raw) {
-    const msg = JSON.parse(String(raw));
-    if (msg.id) {
-      const pending = this.pending.get(msg.id);
-      if (pending) {
-        this.pending.delete(msg.id);
-        if (msg.error) pending.reject(new Error(msg.error.message));
-        else pending.resolve(msg.result);
-      }
-      return;
-    }
-    if (msg.method) {
-      const handlers = this.listeners.get(msg.method) ?? [];
-      for (const handler of handlers) handler(msg.params);
-    }
-  }
-
-  send(method, params = {}) {
-    return new Promise((resolve, reject) => {
-      const id = ++this.id;
-      this.pending.set(id, { resolve, reject });
-      this.ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-
-  once(method) {
-    return new Promise((resolve) => {
-      this.listeners.set(method, [...(this.listeners.get(method) ?? []), resolve]);
-    });
-  }
-}
-
-function wsConnect(url) {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(url);
-    ws.addEventListener("open", () => resolve(ws), { once: true });
-    ws.addEventListener("error", () => reject(new Error("websocket connect failed")), {
-      once: true,
-    });
-  });
-}
+const webRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..'
+);
 
 const EXPRESSION = `(async () => {
   const base = location.origin + "/mock-addon";
@@ -175,38 +80,61 @@ const EXPRESSION = `(async () => {
 
 async function main() {
   const { child: server, port } = await spawnServer();
-  const userDataDir = mkdtempSync(path.join(tmpdir(), "ch-smoke-"));
+  const userDataDir = mkdtempSync(path.join(tmpdir(), 'ch-smoke-'));
   const chrome = launchChrome(userDataDir);
 
   try {
     const debugPort = await readDevToolsPort(userDataDir);
-    const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json`)).json();
-    const page = targets.find((t) => t.type === "page");
-    if (!page) throw new Error("no page target");
+    const targets = await (
+      await fetch(`http://127.0.0.1:${debugPort}/json`, {
+        signal: AbortSignal.timeout(5_000),
+      })
+    ).json();
+    const page = targets.find((t) => t.type === 'page');
+    if (!page) throw new Error('no page target');
 
     const ws = await wsConnect(page.webSocketDebuggerUrl);
     const cdp = new Cdp(ws);
-    await cdp.send("Runtime.enable");
-    await cdp.send("Page.enable");
-    const loaded = cdp.once("Page.loadEventFired");
-    await cdp.send("Page.navigate", { url: `http://127.0.0.1:${port}/` });
-    await Promise.race([loaded, sleep(8000)]);
+    await cdp.send('Runtime.enable');
+    await cdp.send('Page.enable');
+    const loaded = cdp.once('Page.loadEventFired');
+    const [navigation] = await Promise.all([
+      cdp.send('Page.navigate', { url: `http://127.0.0.1:${port}/` }),
+      loaded,
+    ]);
+    if (navigation.errorText)
+      throw new Error(`Browser navigation failed: ${navigation.errorText}`);
 
-    const evaluation = await cdp.send("Runtime.evaluate", {
+    const evaluation = await cdp.send('Runtime.evaluate', {
       expression: EXPRESSION,
       awaitPromise: true,
       returnByValue: true,
     });
     if (evaluation.exceptionDetails) {
       throw new Error(
-        `evaluate failed: ${JSON.stringify(evaluation.exceptionDetails)}`,
+        `evaluate failed: ${JSON.stringify(evaluation.exceptionDetails)}`
       );
     }
+    const result = evaluation.result.value;
+    assert.equal(
+      result.version,
+      JSON.parse(
+        readFileSync(path.join(webRoot, 'public/wasm/build-info.json'), 'utf8')
+      ).version
+    );
+    assert.equal(result.manifestId, 'mock');
+    assert.equal(result.catalogCount, 1);
+    assert.equal(result.metaName, 'Test Movie');
+    assert.equal(result.streamName, 'Demo');
+    assert.equal(result.streamUrl, 'http://example.test/demo.m3u8');
+    assert.equal(result.getAfterSet, 'v1');
+    assert.equal(result.getAfterRemove, null);
+    assert.equal(result.persist, 'P123');
     console.log(`SMOKE_RESULT=${JSON.stringify(evaluation.result.value)}`);
     ws.close();
   } finally {
-    chrome.kill("SIGKILL");
-    server.kill("SIGTERM");
+    chrome.kill('SIGKILL');
+    server.kill('SIGTERM');
     await sleep(100);
     rmSync(userDataDir, { recursive: true, force: true });
   }

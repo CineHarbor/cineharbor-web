@@ -1,7 +1,8 @@
 import type { AddonMeta } from "@/lib/transport/addon-types";
+
 import {
-  metaToSearchResult,
   metasToSearchResults,
+  metaToSearchResult,
 } from "./catalog-bridge";
 
 const meta: AddonMeta = {

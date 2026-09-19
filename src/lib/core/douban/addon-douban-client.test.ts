@@ -1,11 +1,11 @@
 import type { AddonMeta } from "@/lib/transport/addon-types";
 
 import {
+  type DoubanAddonPort,
   AddonDoubanClient,
   DOUBAN_SEARCH_PAGE_SIZE,
   metaToDoubanItem,
   parseDoubanAddonId,
-  type DoubanAddonPort,
 } from "./addon-douban-client";
 
 function meta(partial: Partial<AddonMeta> & Pick<AddonMeta, "id" | "name">): AddonMeta {

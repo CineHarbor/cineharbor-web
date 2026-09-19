@@ -30,6 +30,8 @@ const nextConfig = {
   swcMinify: false,
 
   experimental: {
+    // Bound build workers on shared CI runners; preserve every route and type/lint gate.
+    cpus: 2,
     instrumentationHook: process.env.NODE_ENV === 'production',
   },
 
@@ -98,9 +100,12 @@ const withPWA = require('next-pwa')({
         mode: 'production',
       }
     : {}),
-  register: true,
-  skipWaiting: true,
-  runtimeCaching: buildRuntimeCaching((url) => self.origin === url.origin),
+  register: false,
+  skipWaiting: false,
+  runtimeCaching: buildRuntimeCaching(),
+  cacheStartUrl: false,
+  cleanupOutdatedCaches: true,
+  publicExcludes: ['!*.d.ts', '!wasm/*.d.ts'],
   fallbacks: {
     document: '/_offline',
   },

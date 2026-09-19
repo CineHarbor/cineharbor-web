@@ -2,8 +2,8 @@ import {
   getAddonContentDataSource,
 } from '@/lib/core/content/addon-content-data-source-factory';
 import {
-  buildSuggestions,
   type ContentSuggestion,
+  buildSuggestions,
 } from '@/lib/core/content/suggestions';
 import { getRuntimeConfig } from '@/lib/runtime-config';
 import type { ApiFetchOptions } from '@/lib/transport/api-client';

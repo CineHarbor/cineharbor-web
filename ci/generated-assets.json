@@ -1,0 +1,19 @@
+{
+  "generated_paths_removed_from_git": [
+    "public/fallback-40DSZb76yLb5Tj0BxCZFj.js",
+    "public/sw.js",
+    "public/wasm/cineharbor_core_web.d.ts",
+    "public/wasm/cineharbor_core_web.js",
+    "public/wasm/cineharbor_core_web_bg.wasm",
+    "public/wasm/cineharbor_core_web_bg.wasm.d.ts",
+    "public/workbox-e9849328.js",
+    "public/worker-sre2yidtwt0SU5AbNH4mD.js"
+  ],
+  "source_workers": [
+    "public/core-worker.js",
+    "public/core-storage.js",
+    "worker/index.js"
+  ],
+  "build_command": "pnpm build",
+  "desktop_build_command": "pnpm build:desktop:frontend"
+}

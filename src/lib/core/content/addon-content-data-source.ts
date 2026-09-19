@@ -13,8 +13,8 @@ import type {
 import type { SearchResult } from "@/lib/types";
 
 import {
-  metasToSearchResults,
   type CatalogBridgeOptions,
+  metasToSearchResults,
 } from "./catalog-bridge";
 import { buildDetail } from "./streams-bridge";
 

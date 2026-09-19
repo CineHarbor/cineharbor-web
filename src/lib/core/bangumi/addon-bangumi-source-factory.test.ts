@@ -1,6 +1,6 @@
 import {
-  USE_ADDON_BANGUMI,
   getAddonBangumiClient,
+  USE_ADDON_BANGUMI,
 } from "./addon-bangumi-source-factory";
 
 jest.mock("@/lib/core/bridge", () => ({
@@ -17,12 +17,10 @@ jest.mock("@/lib/transport/core-addon-client", () => ({
   })),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { loadCoreBridge } = require("@/lib/core/bridge") as {
+const { loadCoreBridge } = jest.requireMock("@/lib/core/bridge") as {
   loadCoreBridge: jest.Mock;
 };
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { CoreAddonClient, getAddonProviderConfig } = require(
+const { CoreAddonClient, getAddonProviderConfig } = jest.requireMock(
   "@/lib/transport/core-addon-client",
 ) as { CoreAddonClient: jest.Mock; getAddonProviderConfig: jest.Mock };
 

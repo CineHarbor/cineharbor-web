@@ -28,3 +28,12 @@
 - 分类：compatible operational upgrade；Core/Profile 仍为 `1.0` / `repository-filesystem/1.0`，保留 `project.identity`、`continuity.lineage`、memory locators/content、policy 与无关 Project 内容。
 - 激活 packaging：新增 canonical 根 `AGNIR.md`；`AGENTS.md` 改为直达 `AGNIR.md` 的 locator；README `## Agnir Project Instructions` 收敛为兼容 locator。
 - provenance：`AGNIR.yaml > extensions > agnir/operations` 更新为 release `1.0.2` / applied revision `b5626394ec40a5cb7a28c01892acde07cc0adc8e`。
+
+## 2026-09-19 — 1.0.0 reproducibility and client lifecycle gate
+
+- Principal authorized autonomous implementation toward 1.0.0 release-ready, without final public publication. ADR-0006 supersedes the historical native-RPC/dual-content target; remaining control/release APIs are classified rather than mechanically eliminated.
+- Pin integration sources and the Cargo.lock-matched WASM bridge; generate WASM/PWA output at build time rather than committing stale generated binaries. Preserve existing user data.
+- No private API/token/media/page runtime cache. Public metadata is bounded and revisioned static assets are precached. PWA updates are explicit user actions to avoid interrupting playback; obsolete HTTP caches are removed without deleting IndexedDB/download storage.
+- Worker deadlines and explicit failure/disposal semantics replace unbounded pending promises. Inline JSON must be script-safe; fonts must not require external build-time fetches.
+- Real browser tests execute in authorized CI because local browser navigation is policy-blocked; no local browser pass is inferred. PWA upgrade evidence does not replace signed native Desktop updater acceptance.
+- Identity, lineage, Core/Profile and Agnir operations provenance remain unchanged.
