@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
 
 import './globals.css';
 
@@ -9,15 +8,15 @@ import {
   buildPublicRuntimeConfig,
   resolveSitePresentation,
 } from '@/lib/runtime/public-config';
+import { serializeInlineJson } from '@/lib/security/inline-json';
 
 import DesktopRuntimeSync from '@/components/DesktopRuntimeSync';
 import DesktopUpdateBootstrap from '@/components/DesktopUpdateBootstrap';
+import PwaRegistration from '@/components/PwaRegistration';
 
 import { GlobalErrorIndicator } from '../components/GlobalErrorIndicator';
 import { SiteProvider } from '../components/SiteProvider';
 import { ThemeProvider } from '../components/ThemeProvider';
-
-const inter = Inter({ subsets: ['latin'] });
 
 function buildDesktopRuntimeBootstrapScript() {
   return `(function () {
@@ -247,7 +246,9 @@ export default async function RootLayout({
     buildPublicRuntimeConfig(),
   ]);
   const isDesktopTarget = runtimeConfig.APP_TARGET === 'desktop';
-  const themeStorageKey = isDesktopTarget ? 'cineharbor-desktop-theme' : 'theme';
+  const themeStorageKey = isDesktopTarget
+    ? 'cineharbor-desktop-theme'
+    : 'theme';
   const defaultTheme = isDesktopTarget ? 'dark' : 'system';
   const enableSystemTheme = !isDesktopTarget;
 
@@ -275,7 +276,9 @@ export default async function RootLayout({
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.RUNTIME_CONFIG = ${JSON.stringify(runtimeConfig)};`,
+            __html: `window.RUNTIME_CONFIG = ${serializeInlineJson(
+              runtimeConfig
+            )};`,
           }}
         />
         <script
@@ -284,9 +287,7 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body
-        className={`${inter.className} min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-200`}
-      >
+      <body className='font-sans min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-200'>
         <ThemeProvider
           attribute='class'
           defaultTheme={defaultTheme}
@@ -294,6 +295,13 @@ export default async function RootLayout({
           storageKey={themeStorageKey}
           disableTransitionOnChange
         >
+          <PwaRegistration
+            enabled={
+              !isDesktopTarget &&
+              (process.env.NODE_ENV === 'production' ||
+                process.env.ENABLE_PWA_DEV === 'true')
+            }
+          />
           <DesktopUpdateBootstrap />
           <DesktopRuntimeSync />
           <SiteProvider

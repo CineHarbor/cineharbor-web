@@ -9,6 +9,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { startTransition, Suspense, useEffect, useRef, useState } from 'react';
 
 import {
+  getAddonLiveDataSource,
+} from '@/lib/core/live/addon-live-source-factory';
+import {
   bindDesktopPlayerPresentationFullscreenState,
   toggleDesktopPlayerPresentationFullscreenState,
 } from '@/lib/desktop/fullscreen';
@@ -41,9 +44,6 @@ import {
   LiveEpgData,
   LiveSource,
 } from '@/lib/transport/live-client';
-import {
-  getAddonLiveDataSource,
-} from '@/lib/core/live/addon-live-source-factory';
 
 import EpgScrollableRow from '@/components/EpgScrollableRow';
 import PageLayout from '@/components/PageLayout';

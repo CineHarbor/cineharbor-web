@@ -1,11 +1,11 @@
 import type { AddonMeta } from "@/lib/transport/addon-types";
 
 import {
-  AddonBangumiClient,
-  metaToBangumiItem,
-  metasToBangumiCalendar,
-  parseBangumiAddonId,
   type BangumiAddonPort,
+  AddonBangumiClient,
+  metasToBangumiCalendar,
+  metaToBangumiItem,
+  parseBangumiAddonId,
 } from "./addon-bangumi-client";
 
 function meta(partial: Partial<AddonMeta> & Pick<AddonMeta, "id" | "name">): AddonMeta {

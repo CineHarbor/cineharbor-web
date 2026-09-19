@@ -1,4 +1,5 @@
 import type { CoreBridge } from "@/lib/core/bridge";
+
 import {
   CoreAddonClient,
   getAddonProviderConfig,

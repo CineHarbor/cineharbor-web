@@ -52,6 +52,11 @@ function restoreAll() {
 }
 
 try {
+  execFileSync(
+    process.execPath,
+    [join(projectRoot, 'scripts/build-core-wasm.mjs')],
+    { cwd: projectRoot, env: desktopEnv, stdio: 'inherit' }
+  );
   moveAside('src/app/api', 'src-app-api');
   moveAside('src/app/media', 'src-app-media');
   moveAside('src/middleware.ts', 'src-middleware.ts');

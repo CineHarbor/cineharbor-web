@@ -12,8 +12,8 @@ import { SearchResult } from '@/lib/types';
 import { filterAdultContentResults } from '@/lib/yellow';
 
 import {
-  buildSuggestions,
   type ContentSuggestion,
+  buildSuggestions,
 } from './suggestions';
 
 export type { ContentSuggestion };

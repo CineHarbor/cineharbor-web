@@ -79,6 +79,15 @@ module.exports = {
   },
   overrides: [
     {
+      // This build-time module is loaded directly by next.config.js in Node.
+      files: ['src/lib/core/service-worker/runtime-caching.js'],
+      rules: { '@typescript-eslint/no-var-requires': 'off' },
+    },
+    {
+      files: ['**/*.test.{js,ts,tsx}', '**/__tests__/**/*.{js,ts,tsx}'],
+      env: { jest: true },
+    },
+    {
       files: ['src/app/**/*.{ts,tsx}', 'src/components/**/*.{ts,tsx}'],
       excludedFiles: ['**/*.test.ts', '**/*.test.tsx'],
       rules: {

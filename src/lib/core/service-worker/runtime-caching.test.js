@@ -1,51 +1,93 @@
-const { buildRuntimeCaching } = require("./runtime-caching");
+const { buildRuntimeCaching } = jest.requireActual('./runtime-caching');
+const APP_ORIGIN = 'https://app.test';
 
-const APP_ORIGIN = "https://app.test";
-const isSameOrigin = (url) => url.origin === APP_ORIGIN;
-
-function match(entry, urlString) {
-  return entry.urlPattern({ url: new URL(urlString) });
+function handler(urlString, overrides = {}) {
+  const url = new URL(urlString);
+  const args = {
+    url,
+    sameOrigin: url.origin === APP_ORIGIN,
+    request: {
+      credentials: 'same-origin',
+      headers: { has: () => false },
+      ...overrides,
+    },
+  };
+  return buildRuntimeCaching().find((entry) => entry.urlPattern(args));
 }
 
-function findEntry(entries, cacheName) {
-  return entries.find((entry) => entry?.options?.cacheName === cacheName);
-}
-
-describe("runtime-caching（薄客户端 SW）", () => {
-  const entries = buildRuntimeCaching(isSameOrigin);
-
-  it("wasm core 同源 CacheFirst 固化（/core-worker.js + /wasm/*）", () => {
-    const entry = findEntry(entries, "core-wasm");
-    expect(entry).toBeTruthy();
-    expect(entry.handler).toBe("CacheFirst");
-    expect(match(entry, `${APP_ORIGIN}/core-worker.js`)).toBe(true);
+describe('PWA first-match security policy', () => {
+  it.each([
+    '/api/login',
+    '/api/logout',
+    '/api/favorites',
+    '/api/history',
+    '/api/admin/config',
+    '/api/desktop/latest.json',
+    '/api/profile-sync',
+    '/api/proxy/vod/m3u8?url=x',
+    '/media/live/m3u8',
+    '/video.ts',
+    '/video.mp4',
+    '/key.key',
+  ])('never caches private or media path %s', (path) => {
+    expect(handler(APP_ORIGIN + path).handler).toBe('NetworkOnly');
+  });
+  it.each([
+    '/manifest.json',
+    '/catalog/movie/search.json',
+    '/catalog/movie/search/search=test.json',
+    '/meta/movie/123.json',
+  ])('caches only anonymous remote protocol metadata: %s', (path) => {
+    expect(handler('https://addon.test' + path).handler).toBe(
+      'StaleWhileRevalidate'
+    );
+    expect(handler(APP_ORIGIN + path).handler).toBe('NetworkOnly');
+  });
+  it.each([
+    'token',
+    'access_token',
+    'api_key',
+    'signature',
+    'AUTH',
+    'password',
+  ])('tokenized metadata never reaches a cache (%s)', (key) => {
     expect(
-      match(entry, `${APP_ORIGIN}/wasm/cineharbor_core_web_bg.wasm`)
-    ).toBe(true);
-    expect(match(entry, "https://other.test/wasm/x.wasm")).toBe(false);
-    expect(match(entry, `${APP_ORIGIN}/api/search`)).toBe(false);
+      handler(`https://addon.test/manifest.json?${key}=private`).handler
+    ).toBe('NetworkOnly');
   });
-
-  it("addon 元数据跨源 SWR（manifest/catalog/meta，不含 /media/*）", () => {
-    const entry = findEntry(entries, "addon-meta");
-    expect(entry).toBeTruthy();
-    expect(entry.handler).toBe("StaleWhileRevalidate");
-    expect(match(entry, "http://127.0.0.1:11472/manifest.json")).toBe(true);
-    expect(match(entry, "http://127.0.0.1:11472/catalog/tv/channels.json")).toBe(
-      true
+  it('credentials, private addon prefixes and streams are network-only', () => {
+    expect(
+      handler('https://addon.test/manifest.json', { credentials: 'include' })
+        .handler
+    ).toBe('NetworkOnly');
+    expect(
+      handler('https://addon.test/manifest.json', {
+        headers: { has: (name) => name === 'authorization' },
+      }).handler
+    ).toBe('NetworkOnly');
+    expect(
+      handler('https://addon.test/manifest.json', {
+        headers: { has: (name) => name === 'range' },
+      }).handler
+    ).toBe('NetworkOnly');
+    expect(handler('https://user:pass@addon.test/manifest.json').handler).toBe(
+      'NetworkOnly'
     );
-    expect(match(entry, "http://127.0.0.1:11473/meta/movie/x.json")).toBe(true);
-    expect(match(entry, "http://127.0.0.1:11472/media/live/m3u8?x=1")).toBe(
-      false
+    expect(handler('https://addon.test/private/manifest.json').handler).toBe(
+      'NetworkOnly'
+    );
+    expect(handler('https://addon.test/stream/movie/a.json').handler).toBe(
+      'NetworkOnly'
     );
   });
-
-  it("原生 /api 仅同源缓存，排除 auth 与 proxy/vod，跨源不回退", () => {
-    const entry = findEntry(entries, "apis");
-    expect(entry).toBeTruthy();
-    expect(match(entry, `${APP_ORIGIN}/api/search?q=x`)).toBe(true);
-    expect(match(entry, `${APP_ORIGIN}/api/auth/login`)).toBe(false);
-    expect(match(entry, `${APP_ORIGIN}/api/proxy/vod/m3u8?url=x`)).toBe(false);
-    expect(match(entry, "http://other.test/api/search")).toBe(false);
+  it('has no permanent runtime WASM cache or broad account/page/cross-origin cache', () => {
+    const names = buildRuntimeCaching()
+      .map((entry) => entry.options?.cacheName)
+      .filter(Boolean);
+    expect(names).toEqual(['cineharbor-public-addon-meta-v1']);
+    expect(
+      handler(APP_ORIGIN + '/wasm/cineharbor_core_web_bg.wasm').handler
+    ).toBe('NetworkOnly');
+    expect(handler(APP_ORIGIN + '/profile').handler).toBe('NetworkOnly');
   });
 });

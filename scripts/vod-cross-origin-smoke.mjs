@@ -1,3 +1,14 @@
+import assert from 'node:assert/strict';
+import {
+  sleep,
+  waitForUrl,
+  spawnServer,
+  spawnRustAddon,
+  launchChrome,
+  readDevToolsPort,
+  Cdp,
+  wsConnect,
+} from './smoke-tools.mjs';
 // 端到端验证（vod 交叉源）：真实 headless Chrome 里从 A 源页面直连 B 源真实 vod addon :11473，
 // 走 worker→wasm→fetch 管线，对 mock CustomAPI 站完成 catalog(search)/meta/streams，证明点播 cutover
 // 的跨源直连链路成立（搜索→详情→剧集流）。与 live smoke 同构，仅换 addon 与 mock 数据源。
@@ -5,18 +16,24 @@
 // 依赖：Chrome + node 22 + cargo（vod addon）。运行：node scripts/vod-cross-origin-smoke.mjs
 // 成功 stdout 输出 `VOD_CROSS_ORIGIN_RESULT={...}`，失败非 0 退出。
 
-import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import http from "node:http";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import http from 'node:http';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const addonSdkRoot = path.resolve(webRoot, "..", "cineharbor-addon-sdk");
-const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-const CARGO_HOME = "/Users/jay/Code/CineHarbor/.cargo-home";
-const CARGO = process.env.CARGO || "/Users/jay/.cargo/bin/cargo";
+const webRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '..'
+);
+const addonSdkRoot = path.resolve(webRoot, '..', 'cineharbor-addon-sdk');
+
 const ADDON_PORT = 11473;
 const ADDON_BASE = `http://127.0.0.1:${ADDON_PORT}`;
 
@@ -27,27 +44,27 @@ function buildSearchPayload() {
     pagecount: 1,
     list: [
       {
-        vod_id: "101",
-        vod_name: "星际穿越",
-        vod_pic: "https://pic.test/101.jpg",
-        vod_year: "2014",
-        vod_class: "科幻",
-        type_name: "电影",
-        vod_content: "一部关于星际旅行的电影",
-        vod_douban_id: "1889243",
-        vod_play_url: "正片$http://cdn.test/movies/101.m3u8",
+        vod_id: '101',
+        vod_name: '星际穿越',
+        vod_pic: 'https://pic.test/101.jpg',
+        vod_year: '2014',
+        vod_class: '科幻',
+        type_name: '电影',
+        vod_content: '一部关于星际旅行的电影',
+        vod_douban_id: '1889243',
+        vod_play_url: '正片$http://cdn.test/movies/101.m3u8',
       },
       {
-        vod_id: "202",
-        vod_name: "星际迷航 新篇章",
-        vod_pic: "https://pic.test/202.jpg",
-        vod_year: "2023",
-        vod_class: "科幻/冒险",
-        type_name: "连续剧",
-        vod_content: "一部关于星际旅行的剧集",
-        vod_douban_id: "36310054",
+        vod_id: '202',
+        vod_name: '星际迷航 新篇章',
+        vod_pic: 'https://pic.test/202.jpg',
+        vod_year: '2023',
+        vod_class: '科幻/冒险',
+        type_name: '连续剧',
+        vod_content: '一部关于星际旅行的剧集',
+        vod_douban_id: '36310054',
         vod_play_url:
-          "第1集$http://cdn.test/series/202/ep1.m3u8#第2集$http://cdn.test/series/202/ep2.m3u8#第3集$http://cdn.test/series/202/ep3.m3u8",
+          '第1集$http://cdn.test/series/202/ep1.m3u8#第2集$http://cdn.test/series/202/ep2.m3u8#第3集$http://cdn.test/series/202/ep3.m3u8',
       },
     ],
   };
@@ -61,162 +78,32 @@ function buildDetailPayload(vodId) {
 async function startMockVodSite() {
   return new Promise((resolve) => {
     const server = http.createServer((request, response) => {
-      const url = new URL(request.url, "http://127.0.0.1");
-      const ac = url.searchParams.get("ac");
-      const wd = url.searchParams.get("wd");
-      const ids = url.searchParams.get("ids");
-      response.setHeader("content-type", "application/json; charset=utf-8");
-      if (ac === "videolist" && ids) {
+      const url = new URL(request.url, 'http://127.0.0.1');
+      const ac = url.searchParams.get('ac');
+      const wd = url.searchParams.get('wd');
+      const ids = url.searchParams.get('ids');
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      if (ac === 'videolist' && ids) {
         response.end(JSON.stringify(buildDetailPayload(ids)));
-      } else if (ac === "videolist" && wd) {
+      } else if (ac === 'videolist' && wd) {
         response.end(JSON.stringify(buildSearchPayload()));
       } else {
         response.end(JSON.stringify({ list: [], pagecount: 1 }));
       }
     });
-    server.listen(0, "127.0.0.1", () => {
+    server.listen(0, '127.0.0.1', () => {
       resolve({ server, port: server.address().port });
     });
   });
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function waitForUrl(url, timeoutMs = 20000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return;
-    } catch {
-      /* not up yet */
-    }
-    await sleep(300);
-  }
-  throw new Error(`timed out waiting for ${url}`);
-}
-
-function spawnServer() {
-  return new Promise((resolve, reject) => {
-    const child = spawn("node", ["scripts/wasm-smoke.mjs"], {
-      cwd: webRoot,
-      stdio: ["ignore", "pipe", "inherit"],
-    });
-    let buf = "";
-    child.stdout.on("data", (chunk) => {
-      buf += String(chunk);
-      const m = buf.match(/SMOKE_PORT=(\d+)/);
-      if (m) resolve({ child, port: Number(m[1]) });
-    });
-    child.on("exit", (code) => {
-      if (code !== null && code !== 0 && !buf.includes("SMOKE_PORT")) {
-        reject(new Error(`smoke server exited early: ${code}`));
-      }
-    });
-  });
-}
-
 function spawnVodAddon(configPath) {
-  if (!existsSync(addonSdkRoot)) {
-    throw new Error(`addon sdk root not found: ${addonSdkRoot}`);
-  }
-  // CINEHARBOR_VOD_SITES 是「JSON 文件路径」，非内联 JSON（见 vod main.rs load_config 的 read_to_string）。
-  const child = spawn(CARGO, ["run", "-p", "cineharbor-addon-vod"], {
-    cwd: addonSdkRoot,
-    stdio: ["ignore", "pipe", "inherit"],
+  return spawnRustAddon('cineharbor-addon-vod', {
+    root: addonSdkRoot,
     env: {
-      ...process.env,
-      CARGO_HOME,
       CINEHARBOR_ADDON_PORT: String(ADDON_PORT),
       CINEHARBOR_VOD_SITES: configPath,
     },
-  });
-  child.on("error", (error) => {
-    console.error(`VOD_ADDON_SPAWN_ERROR: ${error.message} (cargo=${CARGO}, cwd=${addonSdkRoot})`);
-  });
-  return child;
-}
-
-function launchChrome(userDataDir) {
-  return spawn(
-    CHROME,
-    [
-      "--headless=new",
-      "--no-sandbox",
-      "--disable-gpu",
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--disable-dev-shm-usage",
-      "--remote-debugging-port=0",
-      `--user-data-dir=${userDataDir}`,
-      "about:blank",
-    ],
-    { stdio: "ignore" },
-  );
-}
-
-async function readDevToolsPort(userDataDir) {
-  for (let i = 0; i < 100; i++) {
-    const file = path.join(userDataDir, "DevToolsActivePort");
-    if (existsSync(file)) {
-      const [port] = readFileSync(file, "utf8").split("\n");
-      return Number(port);
-    }
-    await sleep(50);
-  }
-  throw new Error("DevToolsActivePort not written");
-}
-
-class Cdp {
-  constructor(ws) {
-    this.ws = ws;
-    this.id = 0;
-    this.pending = new Map();
-    this.listeners = new Map();
-    ws.addEventListener("message", (ev) => this.onMessage(ev.data));
-  }
-
-  onMessage(raw) {
-    const msg = JSON.parse(String(raw));
-    if (msg.id) {
-      const pending = this.pending.get(msg.id);
-      if (pending) {
-        this.pending.delete(msg.id);
-        if (msg.error) pending.reject(new Error(msg.error.message));
-        else pending.resolve(msg.result);
-      }
-      return;
-    }
-    if (msg.method) {
-      const handlers = this.listeners.get(msg.method) ?? [];
-      for (const handler of handlers) handler(msg.params);
-    }
-  }
-
-  send(method, params = {}) {
-    return new Promise((resolve, reject) => {
-      const id = ++this.id;
-      this.pending.set(id, { resolve, reject });
-      this.ws.send(JSON.stringify({ id, method, params }));
-    });
-  }
-
-  once(method) {
-    return new Promise((resolve) => {
-      this.listeners.set(method, [...(this.listeners.get(method) ?? []), resolve]);
-    });
-  }
-}
-
-function wsConnect(url) {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(url);
-    ws.addEventListener("open", () => resolve(ws), { once: true });
-    ws.addEventListener("error", () => reject(new Error("websocket connect failed")), {
-      once: true,
-    });
   });
 }
 
@@ -263,15 +150,21 @@ const EXPRESSION = `(async () => {
 })()`;
 
 async function main() {
-  const tmp = mkdtempSync(path.join(tmpdir(), "ch-vod-cross-"));
+  const tmp = mkdtempSync(path.join(tmpdir(), 'ch-vod-cross-'));
   const mock = await startMockVodSite();
-  const configPath = path.join(tmp, "vod-sites.json");
+  const configPath = path.join(tmp, 'vod-sites.json');
   writeFileSync(
     configPath,
     JSON.stringify({
-      sites: [{ key: "mock", name: "MockSite", api: `http://127.0.0.1:${mock.port}/api` }],
+      sites: [
+        {
+          key: 'mock',
+          name: 'MockSite',
+          api: `http://127.0.0.1:${mock.port}/api`,
+        },
+      ],
     }),
-    "utf8",
+    'utf8'
   );
   const addon = spawnVodAddon(configPath);
   let server;
@@ -282,37 +175,66 @@ async function main() {
     await waitForUrl(`${ADDON_BASE}/manifest.json`);
     const started = await spawnServer();
     server = started.child;
-    userDataDir = mkdtempSync(path.join(tmpdir(), "ch-vod-smoke-"));
+    userDataDir = mkdtempSync(path.join(tmpdir(), 'ch-vod-smoke-'));
     const chromeProc = launchChrome(userDataDir);
-    chrome.kill = () => chromeProc.kill("SIGKILL");
+    chrome.kill = () => chromeProc.kill('SIGKILL');
 
     const debugPort = await readDevToolsPort(userDataDir);
-    const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json`)).json();
-    const page = targets.find((t) => t.type === "page");
-    if (!page) throw new Error("no page target");
+    const targets = await (
+      await fetch(`http://127.0.0.1:${debugPort}/json`, {
+        signal: AbortSignal.timeout(5_000),
+      })
+    ).json();
+    const page = targets.find((t) => t.type === 'page');
+    if (!page) throw new Error('no page target');
 
     const ws = await wsConnect(page.webSocketDebuggerUrl);
     const cdp = new Cdp(ws);
-    await cdp.send("Runtime.enable");
-    await cdp.send("Page.enable");
-    const loaded = cdp.once("Page.loadEventFired");
-    await cdp.send("Page.navigate", { url: `http://127.0.0.1:${started.port}/` });
-    await Promise.race([loaded, sleep(8000)]);
+    await cdp.send('Runtime.enable');
+    await cdp.send('Page.enable');
+    const loaded = cdp.once('Page.loadEventFired');
+    const [navigation] = await Promise.all([
+      cdp.send('Page.navigate', { url: `http://127.0.0.1:${started.port}/` }),
+      loaded,
+    ]);
+    if (navigation.errorText)
+      throw new Error(`Browser navigation failed: ${navigation.errorText}`);
 
-    const evaluation = await cdp.send("Runtime.evaluate", {
+    const evaluation = await cdp.send('Runtime.evaluate', {
       expression: EXPRESSION,
       awaitPromise: true,
       returnByValue: true,
     });
     if (evaluation.exceptionDetails) {
-      throw new Error(`evaluate failed: ${JSON.stringify(evaluation.exceptionDetails)}`);
+      throw new Error(
+        `evaluate failed: ${JSON.stringify(evaluation.exceptionDetails)}`
+      );
     }
-    console.log(`VOD_CROSS_ORIGIN_RESULT=${JSON.stringify(evaluation.result.value)}`);
+    const result = evaluation.result.value;
+    assert.notEqual(result.pageOrigin, result.addonBase);
+    assert.equal(result.manifestId, 'cineharbor.vod');
+    assert.equal(result.catalogCount, 1);
+    assert.equal(result.firstId, 'vod:mock:101');
+    assert.equal(result.firstTitle, '星际穿越');
+    assert.equal(result.metaName, result.firstTitle);
+    assert.equal(result.metaVideoCount, 1);
+    assert.equal(result.streamCount, 1);
+    const stream = new URL(result.firstStreamUrl);
+    assert.equal(stream.origin, ADDON_BASE);
+    assert.equal(stream.pathname, '/media/vod/m3u8');
+    assert.equal(stream.searchParams.get('source'), 'mock');
+    assert.equal(
+      stream.searchParams.get('url'),
+      'http://cdn.test/movies/101.m3u8'
+    );
+    console.log(
+      `VOD_CROSS_ORIGIN_RESULT=${JSON.stringify(evaluation.result.value)}`
+    );
     ws.close();
   } finally {
     chrome.kill();
-    addon.kill("SIGKILL");
-    server?.kill("SIGTERM");
+    addon.kill('SIGKILL');
+    server?.kill('SIGTERM');
     mock.server.close();
     await sleep(150);
     if (userDataDir) rmSync(userDataDir, { recursive: true, force: true });

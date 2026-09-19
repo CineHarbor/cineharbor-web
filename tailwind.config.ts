@@ -16,7 +16,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        primary: ['Inter', ...defaultTheme.fontFamily.sans],
+        primary: defaultTheme.fontFamily.sans,
       },
       colors: {
         primary: {

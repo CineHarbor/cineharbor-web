@@ -39,3 +39,7 @@ CC BY-NC-SA 4.0
 ## Agnir Project Instructions
 
 Agnir 的 canonical Project 激活与操作说明位于 [`AGNIR.md`](AGNIR.md)。本节仅作为旧版 Agnir `1.0.0` 激活路径的向后兼容 locator，不复制第二份 procedure。
+
+## 1.0.0 发布准备构建
+
+当前源构建、固定跨仓依赖、WASM/PWA 与 CI 验收说明见 [发布准备构建文档](docs/release-1.0.0-build.md)。发布状态以门面仓 `docs/releases/1.0.0/` 和本仓 `.agnir/state.md` 为准；历史阶段勾选不等于已通过正式发布验收。

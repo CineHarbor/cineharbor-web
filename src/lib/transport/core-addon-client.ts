@@ -4,6 +4,7 @@
 //! 注入（`NEXT_PUBLIC_{DOUBAN,VOD,LIVE}_ADDON_URL` 可覆盖）。页面侧后续按数据流改用此类。
 
 import type { CoreBridge } from "@/lib/core/bridge";
+
 import type {
   AddonCatalogResponse,
   AddonContentType,

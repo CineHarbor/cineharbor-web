@@ -1,0 +1,124 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+  NODE_OPTIONS: --max-old-space-size=3072
+  RUSTUP_TOOLCHAIN: 1.98.1
+jobs:
+  quality:
+    name: Typecheck, lint and all unit/tooling tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: workspace/cineharbor-web
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: workspace/cineharbor-web
+          persist-credentials: false
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10.14.0
+          package_json_file: workspace/cineharbor-web/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: workspace/cineharbor-web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm gen:manifest
+      - run: pnpm typecheck
+      - run: pnpm lint --max-warnings 0
+      - run: pnpm test --runInBand
+      - run: pnpm test:tooling
+
+  runtime:
+    name: Clean WASM, production build and real browser integration
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: workspace/cineharbor-web
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: workspace/cineharbor-web
+          persist-credentials: false
+      - run: python3 scripts/ci-checkout.py
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10.14.0
+          package_json_file: workspace/cineharbor-web/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: workspace/cineharbor-web/pnpm-lock.yaml
+      - name: Install exact Rust/WASM bridge toolchain
+        run: |
+          set -euo pipefail
+          rustup toolchain install 1.98.1 --profile minimal --target wasm32-unknown-unknown
+          version=$(node scripts/build-core-wasm.mjs --print-bindgen-version)
+          cargo install wasm-bindgen-cli --version "$version" --locked
+          rustc --version --verbose
+          wasm-bindgen --version
+          google-chrome --version
+      - run: pnpm install --frozen-lockfile
+      - name: Build production from sources (including generated WASM and PWA assets)
+        run: pnpm build
+      - name: Execute every browser/addon integration and report failures without hiding later cases
+        run: |
+          set -uo pipefail
+          mkdir -p test-results
+          result=0
+          for script in wasm-cdp-smoke addon-cross-origin-smoke vod-cross-origin-smoke douban-cross-origin-smoke vod-media-proxy-smoke pwa-production-smoke; do
+            echo "::group::$script"
+            node "scripts/$script.mjs" 2>&1 | tee "test-results/$script.log"
+            code=${PIPESTATUS[0]}
+            printf '%s\n' "$code" > "test-results/$script.exit"
+            if [ "$code" -ne 0 ]; then result=1; fi
+            echo '::endgroup::'
+          done
+          exit "$result"
+      - name: Verify no generated dependency or build configuration was silently committed
+        run: git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-runtime-evidence-${{ github.run_id }}
+          path: |
+            workspace/cineharbor-web/test-results/
+            workspace/cineharbor-web/public/wasm/build-info.json
+          if-no-files-found: error
+          retention-days: 14
+
+  repeat_verified_main:
+    name: Repeat successful main verification once
+    needs: [quality, runtime]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo 'Newer main owns its repeat verification.'
+            exit 0
+          fi
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref main

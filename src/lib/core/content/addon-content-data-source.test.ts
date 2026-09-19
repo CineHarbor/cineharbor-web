@@ -1,8 +1,8 @@
 import type { AddonContentType } from "@/lib/transport/addon-types";
 
 import {
-  AddonContentDataSourceImpl,
   type ContentAddonPort,
+  AddonContentDataSourceImpl,
 } from "./addon-content-data-source";
 
 function makePort(): ContentAddonPort & {
@@ -21,7 +21,7 @@ function makePort(): ContentAddonPort & {
   };
 
   port.catalog.mockImplementation(
-    (type: AddonContentType, id: string, _options?: unknown) => {
+    (type: AddonContentType, _id: string, _options?: unknown) => {
       if (type === "movie") {
         return Promise.resolve({
           metas: [

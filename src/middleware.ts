@@ -3,8 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getAuthInfoFromCookie } from '@/lib/auth';
-
-const ROOT_DOMAIN = 'hkcu.qzz.io';
+import { isAllowedHost, normalizeHost } from '@/lib/security/allowed-hosts';
 const AUTH_SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 type AuthRole = 'owner' | 'admin' | 'user';
@@ -28,10 +27,13 @@ export async function middleware(request: NextRequest) {
   }
 
   if (process.env.NODE_ENV !== 'development' && !isAllowedHost(host)) {
-    return new NextResponse('Access Denied: Please use the official domain.', {
-      status: 403,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
+    return new NextResponse(
+      'Access Denied: Host is not allowed by this deployment.',
+      {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      }
+    );
   }
 
   // 跳过不需要认证的路径
@@ -144,18 +146,6 @@ function handleAuthFailure(
   return NextResponse.redirect(loginUrl);
 }
 
-function normalizeHost(host: string | null): string {
-  return host?.split(':')[0].trim().toLowerCase() || '';
-}
-
-function isAllowedHost(host: string): boolean {
-  return (
-    Boolean(host) &&
-    !host.includes('vercel.app') &&
-    (host === ROOT_DOMAIN || host.endsWith(`.${ROOT_DOMAIN}`))
-  );
-}
-
 // 判断是否需要跳过认证的路径
 function shouldSkipAuth(pathname: string): boolean {
   const skipExactPaths = new Set([
@@ -165,6 +155,8 @@ function shouldSkipAuth(pathname: string): boolean {
     '/robots.txt',
     '/manifest.json',
     '/sw.js',
+    '/core-worker.js',
+    '/core-storage.js',
   ]);
 
   if (skipExactPaths.has(pathname)) {
@@ -177,6 +169,7 @@ function shouldSkipAuth(pathname: string): boolean {
     '/workbox-',
     '/worker-',
     '/icons/',
+    '/wasm/',
     '/logo.png',
     '/screenshot.png',
     '/api/login',

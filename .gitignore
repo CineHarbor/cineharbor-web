@@ -15,3 +15,14 @@ out
 /data
 .DS_Store
 .vercel
+
+# Reproducible WASM/PWA output; never ship an old checked-in bridge.
+/public/wasm/
+/public/sw.js
+/public/workbox-*.js
+/public/workbox-*.js.map
+/public/worker-*.js
+/public/worker-*.js.map
+/public/fallback-*.js
+/public/fallback-*.js.map
+/test-results/

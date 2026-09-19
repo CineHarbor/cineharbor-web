@@ -4,9 +4,9 @@
   "private": true,
   "license": "CC-BY-NC-SA-4.0",
   "scripts": {
-    "dev": "pnpm gen:manifest && next dev -H 0.0.0.0",
+    "dev": "pnpm build:wasm && pnpm gen:manifest && next dev -H 0.0.0.0",
     "dev:pwa": "ENABLE_PWA_DEV=true pnpm dev",
-    "build": "pnpm gen:manifest && next build",
+    "build": "pnpm build:wasm && pnpm gen:manifest && next build",
     "build:desktop:frontend": "node scripts/build-desktop-frontend.mjs",
     "start": "next start",
     "lint": "next lint",
@@ -17,7 +17,9 @@
     "sync:imdb": "node --max-old-space-size=4096 scripts/sync-imdb.js",
     "format": "prettier -w .",
     "format:check": "prettier -c .",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "build:wasm": "node scripts/build-core-wasm.mjs",
+    "test:tooling": "node --test tests/node/*.test.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
