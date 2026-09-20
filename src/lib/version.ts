@@ -1,5 +1,6 @@
-/* eslint-disable no-console */
+import packageMetadata from '../../package.json';
 
-const CURRENT_VERSION = '200.0.1';
+// One owned release version for both package metadata and the running UI.
+const CURRENT_VERSION = packageMetadata.version;
 
 export { CURRENT_VERSION };

@@ -16,6 +16,7 @@ import {
 } from 'react';
 
 import { fetchContentDetail } from '@/lib/content-discovery-client';
+import { getAddonMediaResource } from '@/lib/core/media/media-capability';
 import {
   bindDesktopPlayerPresentationFullscreenState,
   toggleDesktopPlayerPresentationFullscreenState,
@@ -103,6 +104,7 @@ import { acquireScrollLock } from '@/lib/scroll-lock';
 import { FollowRecord, SearchResult } from '@/lib/types';
 import { processImageUrl } from '@/lib/utils';
 import { isAdultContentResult } from '@/lib/yellow';
+import { useMediaCapability } from '@/hooks/useMediaCapability';
 
 import CurrentEpisodeDownloadControl from '@/components/CurrentEpisodeDownloadControl';
 import EpisodeSelector from '@/components/EpisodeSelector';
@@ -686,7 +688,32 @@ function PlayPageClient() {
   }, [offlineEpisodeEntries]);
 
   // 视频播放地址
-  const [videoUrl, setVideoUrl] = useState('');
+  const [requestedVideoUrl, setVideoUrl] = useState('');
+  const { url: videoUrl, error: mediaAuthorizationError, refresh: refreshMediaAuthorization } = useMediaCapability({
+    url: requestedVideoUrl,
+    enabled: !isOfflineMode,
+    reload: async () => {
+      const target = detailRef.current;
+      const episode = currentEpisodeIndexRef.current;
+      if (!target) throw new Error('No active content');
+      const fresh = await fetchContentDetail({ source: target.source, id: target.id });
+      if (target === detailRef.current && episode === currentEpisodeIndexRef.current) {
+        const position = artPlayerRef.current?.currentTime;
+        if (typeof position === 'number' && Number.isFinite(position) && position > 0) {
+          resumeTimeRef.current = position;
+        }
+      }
+      return fresh.episodes[episode] || '';
+    },
+  });
+  useEffect(() => {
+    if (mediaAuthorizationError) {
+      setError(mediaAuthorizationError);
+      setIsVideoLoading(false);
+    } else {
+      setError((current) => current === '媒体授权刷新失败，请重新加载内容后重试' ? null : current);
+    }
+  }, [mediaAuthorizationError]);
 
   // 总集数
   const totalEpisodes = detail?.episodes?.length || 0;
@@ -3092,7 +3119,6 @@ function PlayPageClient() {
       setError('视频地址无效');
       return;
     }
-    console.log(videoUrl);
 
     const playbackType = getPlaybackType(videoUrl);
     setIsVideoLoading(true);
@@ -3266,7 +3292,16 @@ function PlayPageClient() {
             video.hls = hls;
 
             hls.on(Hls.Events.ERROR, function (event: any, data: any) {
-              console.error('HLS Error:', event, data);
+              console.error('HLS request failed', { fatal: Boolean(data.fatal), status: Number(data.response?.code) || 0 });
+              if (!isOfflineMode && getAddonMediaResource(url) && [401, 403].includes(Number(data.response?.code))) {
+                hls.stopLoad();
+                if (!refreshMediaAuthorization()) {
+                  setError('媒体授权失效，请重新加载内容后重试');
+                  setIsVideoLoading(false);
+                  hls.destroy();
+                }
+                return;
+              }
               const offlineErrorMessage = isOfflineMode
                 ? buildOfflineHlsErrorMessage(data)
                 : null;

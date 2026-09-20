@@ -11,6 +11,7 @@ import { startTransition, Suspense, useEffect, useRef, useState } from 'react';
 import {
   getAddonLiveDataSource,
 } from '@/lib/core/live/addon-live-source-factory';
+import { getAddonMediaResource } from '@/lib/core/media/media-capability';
 import {
   bindDesktopPlayerPresentationFullscreenState,
   toggleDesktopPlayerPresentationFullscreenState,
@@ -44,6 +45,7 @@ import {
   LiveEpgData,
   LiveSource,
 } from '@/lib/transport/live-client';
+import { useMediaCapability } from '@/hooks/useMediaCapability';
 
 import EpgScrollableRow from '@/components/EpgScrollableRow';
 import PageLayout from '@/components/PageLayout';
@@ -91,7 +93,23 @@ function LivePageClient() {
   const [needLoadChannel] = useState(searchParams.get('id'));
 
   // 播放器相关
-  const [videoUrl, setVideoUrl] = useState('');
+  const [requestedVideoUrl, setVideoUrl] = useState('');
+  const { url: videoUrl, error: mediaAuthorizationError, refresh: refreshMediaAuthorization } = useMediaCapability({
+    url: requestedVideoUrl,
+    reload: async () => {
+      const channel = currentChannelRef.current;
+      if (!channel) throw new Error('No active channel');
+      return getAddonLiveDataSource().getStreamUrl(channel.id);
+    },
+  });
+  useEffect(() => {
+    if (mediaAuthorizationError) {
+      setError(mediaAuthorizationError);
+      setIsVideoLoading(false);
+    } else {
+      setError((current) => current === '媒体授权刷新失败，请重新加载内容后重试' ? null : current);
+    }
+  }, [mediaAuthorizationError]);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [unsupportedType, setUnsupportedType] = useState<string | null>(null);
   const [audioSpikeProtectionLevel, setAudioSpikeProtectionLevel] =
@@ -976,49 +994,6 @@ function LivePageClient() {
     }
   }, [selectedGroup, groupedChannels]);
 
-  class CustomHlsJsLoader extends Hls.DefaultConfig.loader {
-    constructor(config: any) {
-      super(config);
-      const load = this.load.bind(this);
-      this.load = function (context: any, config: any, callbacks: any) {
-        // 所有的请求都带一个 source 参数
-        try {
-          const url = new URL(context.url);
-          url.searchParams.set(
-            'cineharbor-source',
-            currentSourceRef.current?.key || ''
-          );
-          context.url = url.toString();
-        } catch (error) {
-          // ignore
-        }
-        // 拦截manifest和level请求
-        if (
-          (context as any).type === 'manifest' ||
-          (context as any).type === 'level'
-        ) {
-          // 判断是否浏览器直连
-          const isLiveDirectConnectStr =
-            localStorage.getItem('liveDirectConnect');
-          const isLiveDirectConnect = isLiveDirectConnectStr === 'true';
-          if (isLiveDirectConnect) {
-            // 浏览器直连，使用 URL 对象处理参数
-            try {
-              const url = new URL(context.url);
-              url.searchParams.set('allowCORS', 'true');
-              context.url = url.toString();
-            } catch (error) {
-              // 如果 URL 解析失败，回退到字符串拼接
-              context.url = context.url + '&allowCORS=true';
-            }
-          }
-        }
-        // 执行原始load方法
-        load(context, config, callbacks);
-      };
-    }
-  }
-
   function m3u8Loader(video: HTMLVideoElement, url: string) {
     if (!Hls) {
       console.error('HLS.js 未加载');
@@ -1042,7 +1017,6 @@ function LivePageClient() {
       maxBufferLength: 30,
       backBufferLength: 30,
       maxBufferSize: 60 * 1000 * 1000,
-      loader: CustomHlsJsLoader,
     });
 
     hls.loadSource(url);
@@ -1050,7 +1024,16 @@ function LivePageClient() {
     video.hls = hls;
 
     hls.on(Hls.Events.ERROR, function (event: any, data: any) {
-      console.error('HLS Error:', event, data);
+      console.error('HLS request failed', { fatal: Boolean(data.fatal), status: Number(data.response?.code) || 0 });
+      if (getAddonMediaResource(url) && [401, 403].includes(Number(data.response?.code))) {
+        hls.stopLoad();
+        if (!refreshMediaAuthorization()) {
+          setError('媒体授权失效，请重新加载频道后重试');
+          setIsVideoLoading(false);
+          hls.destroy();
+        }
+        return;
+      }
 
       if (data.fatal) {
         switch (data.type) {
@@ -1081,7 +1064,6 @@ function LivePageClient() {
         return;
       }
 
-      console.log('视频URL:', videoUrl);
 
       // 销毁之前的播放器实例并创建新的
       if (artPlayerRef.current) {

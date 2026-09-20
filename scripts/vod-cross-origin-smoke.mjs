@@ -227,9 +227,11 @@ async function main() {
       stream.searchParams.get('url'),
       'http://cdn.test/movies/101.m3u8'
     );
-    console.log(
-      `VOD_CROSS_ORIGIN_RESULT=${JSON.stringify(evaluation.result.value)}`
-    );
+    assert.match(stream.searchParams.get('sig'), /^[A-Za-z0-9_-]{43}$/);
+    assert.ok(Number(stream.searchParams.get('expires')) > Date.now() / 1000);
+    assert.equal(stream.searchParams.has('token'), false);
+    const { firstStreamUrl: _capability, ...safeResult } = result;
+    console.log(`VOD_CROSS_ORIGIN_RESULT=${JSON.stringify({ ...safeResult, signedStream: true })}`);
     ws.close();
   } finally {
     chrome.kill();

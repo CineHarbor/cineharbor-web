@@ -7,13 +7,14 @@ function buildRuntimeCaching() {
       // First-match policy: credentials, API data and media can never fall through to a cache.
       urlPattern: ({ url, request }) =>
         /^\/(?:api|media|download|downloads)(?:\/|$)/i.test(url.pathname) ||
+        /\/(?:media|meta|stream)\//i.test(url.pathname) ||
         /\.(?:m3u8|ts|m4s|mp4|mp3|aac|key)(?:$|\/)/i.test(url.pathname) ||
         request.headers.has('authorization') ||
         request.headers.has('range') ||
         request.credentials === 'include' ||
         Boolean(url.username || url.password) ||
         Array.from(url.searchParams.keys()).some((key) =>
-          /token|secret|auth|key|signature|credential|password/i.test(key)
+          /token|secret|auth|key|sig|expires|credential|password/i.test(key)
         ),
       handler: 'NetworkOnly',
       options: {},
@@ -28,12 +29,12 @@ function buildRuntimeCaching() {
         !url.username &&
         !url.password &&
         (url.pathname === '/manifest.json' ||
-          /^\/(?:catalog|meta)\/[^/]+\/[^/]+(?:\/[^/]+)?\.json$/.test(
+          /^\/catalog\/[^/]+\/[^/]+(?:\/[^/]+)?\.json$/.test(
             url.pathname
           )),
       handler: 'StaleWhileRevalidate',
       options: {
-        cacheName: 'cineharbor-public-addon-meta-v1',
+        cacheName: 'cineharbor-public-addon-catalog-v2',
         cacheableResponse: { statuses: [200] },
         expiration: { maxEntries: 256, maxAgeSeconds: 60 * 60 },
       },

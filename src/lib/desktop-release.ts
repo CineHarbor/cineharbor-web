@@ -1,6 +1,7 @@
 import desktopReleaseMetadata from '@/config/desktop-release.json';
 
 export const DESKTOP_BASE_VERSION = desktopReleaseMetadata.desktopVersion;
+export const LEGACY_CHANGELOG_REPOSITORY = desktopReleaseMetadata.legacyChangelogRepository;
 export const DESKTOP_UPSTREAM_VERSION = desktopReleaseMetadata.upstreamVersion;
 export const DESKTOP_RELEASE_REPOSITORY =
   desktopReleaseMetadata.releaseRepository;

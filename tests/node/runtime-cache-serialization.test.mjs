@@ -46,6 +46,7 @@ test('activation removes known obsolete caches but preserves user downloads and 
           'apis',
           'core-wasm',
           'addon-meta',
+          'cineharbor-public-addon-meta-v1',
           'static-video-assets',
           'start-url',
           'cineharbor-downloads',
@@ -68,6 +69,7 @@ test('activation removes known obsolete caches but preserves user downloads and 
   assert.deepEqual(deleted.sort(), [
     'addon-meta',
     'apis',
+    'cineharbor-public-addon-meta-v1',
     'core-wasm',
     'start-url',
     'static-video-assets',

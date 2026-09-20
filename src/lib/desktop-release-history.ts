@@ -1,5 +1,5 @@
 import { changelog } from '@/lib/changelog';
-import { DESKTOP_UPSTREAM_VERSION } from '@/lib/desktop-release';
+import { DESKTOP_UPSTREAM_VERSION, LEGACY_CHANGELOG_REPOSITORY } from '@/lib/desktop-release';
 import { buildGithubReleaseDownloadUrl } from '@/lib/desktop-updater-proxy';
 import {
   getDesktopReleaseTagName,
@@ -213,6 +213,12 @@ export function buildLocalDesktopReleaseHistoryFallback({
   manifestProxyBaseUrl?: string;
 } = {}): DesktopReleaseHistoryItem[] {
   if (!isRepositorySlug(repository)) {
+    return [];
+  }
+
+  // Imported 100.x/200.x notes are not proof that the new canonical repository
+  // published those releases. Do not synthesize download/update links for them.
+  if (repository.toLowerCase() !== LEGACY_CHANGELOG_REPOSITORY.toLowerCase()) {
     return [];
   }
 

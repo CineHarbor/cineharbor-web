@@ -11,7 +11,6 @@ import {
 
 const VOD_PROXY_BASE_PATH = getTransportVodProxyBasePath();
 const VOD_PROXY_M3U8_PATH = VOD_PROXY_PATHS.m3u8;
-const ADDON_VOD_PROXY_BASE_PATH = '/media/vod';
 const ADDON_VOD_PROXY_M3U8_PATH = '/media/vod/m3u8';
 
 export type VodProxyAssetKind = 'm3u8' | 'segment' | 'key';
@@ -71,10 +70,7 @@ export function isAbsoluteHttpUrl(url: string): boolean {
 }
 
 function isVodProxyPath(pathname: string): boolean {
-  return (
-    pathname.startsWith(VOD_PROXY_BASE_PATH) ||
-    pathname.startsWith(ADDON_VOD_PROXY_BASE_PATH)
-  );
+  return /\/(?:api\/proxy|media)\/vod\/(?:m3u8|segment|key)$/.test(pathname);
 }
 
 export function isVodProxyUrl(url: string): boolean {
@@ -94,8 +90,7 @@ export function looksLikeManifestUrl(url: string): boolean {
   try {
     const parsedUrl = new URL(url, 'https://cineharbor.local');
     return (
-      parsedUrl.pathname.startsWith(VOD_PROXY_M3U8_PATH) ||
-      parsedUrl.pathname.startsWith(ADDON_VOD_PROXY_M3U8_PATH) ||
+      /\/(?:api\/proxy|media)\/vod\/m3u8$/.test(parsedUrl.pathname) ||
       /\.m3u8($|[?#])/i.test(parsedUrl.pathname + parsedUrl.search)
     );
   } catch (error) {

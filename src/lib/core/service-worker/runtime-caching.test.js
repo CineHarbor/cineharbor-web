@@ -29,6 +29,9 @@ describe('PWA first-match security policy', () => {
     '/video.ts',
     '/video.mp4',
     '/key.key',
+    '/meta/movie/123.json',
+    '/prefix/media/vod/m3u8',
+    '/prefix/stream/tv/channel.json',
   ])('never caches private or media path %s', (path) => {
     expect(handler(APP_ORIGIN + path).handler).toBe('NetworkOnly');
   });
@@ -36,7 +39,6 @@ describe('PWA first-match security policy', () => {
     '/manifest.json',
     '/catalog/movie/search.json',
     '/catalog/movie/search/search=test.json',
-    '/meta/movie/123.json',
   ])('caches only anonymous remote protocol metadata: %s', (path) => {
     expect(handler('https://addon.test' + path).handler).toBe(
       'StaleWhileRevalidate'
@@ -48,12 +50,17 @@ describe('PWA first-match security policy', () => {
     'access_token',
     'api_key',
     'signature',
+    'sig',
+    'expires',
     'AUTH',
     'password',
   ])('tokenized metadata never reaches a cache (%s)', (key) => {
     expect(
       handler(`https://addon.test/manifest.json?${key}=private`).handler
     ).toBe('NetworkOnly');
+  });
+  it('never caches remote metadata containing expiring stream URLs', () => {
+    expect(handler('https://addon.test/meta/movie/123.json').handler).toBe('NetworkOnly');
   });
   it('credentials, private addon prefixes and streams are network-only', () => {
     expect(
@@ -84,7 +91,7 @@ describe('PWA first-match security policy', () => {
     const names = buildRuntimeCaching()
       .map((entry) => entry.options?.cacheName)
       .filter(Boolean);
-    expect(names).toEqual(['cineharbor-public-addon-meta-v1']);
+    expect(names).toEqual(['cineharbor-public-addon-catalog-v2']);
     expect(
       handler(APP_ORIGIN + '/wasm/cineharbor_core_web_bg.wasm').handler
     ).toBe('NetworkOnly');

@@ -119,6 +119,13 @@ describe('desktop release history helpers', () => {
     expect(isDesktopReleaseLineVersion('not-a-version')).toBe(false);
   });
 
+  it('does not invent canonical releases from the imported upstream changelog', () => {
+    expect(buildLocalDesktopReleaseHistoryFallback({
+      currentVersion: '1.0.0',
+      repository: 'CineHarbor/cineharbor-desktop',
+    })).toEqual([]);
+  });
+
   it('builds a local fallback release list from desktop changelog entries', () => {
     const releases = buildLocalDesktopReleaseHistoryFallback({
       currentVersion: '200.0.1-beta.8',

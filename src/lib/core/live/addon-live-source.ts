@@ -12,10 +12,15 @@ import type { AddonLiveClient } from "./addon-live-client";
 export interface AddonLiveDataSource {
   listSources(): Promise<LiveSource[]>;
   listChannels(sourceKey: string): Promise<LiveChannel[]>;
+  getStreamUrl(channelId: string): Promise<string>;
 }
 
 export class AddonLiveDataSourceImpl implements AddonLiveDataSource {
   constructor(private readonly client: AddonLiveClient) {}
+
+  getStreamUrl(channelId: string): Promise<string> {
+    return this.client.getStreamUrl(channelId);
+  }
 
   async listSources(): Promise<LiveSource[]> {
     const sources = await this.client.listSources();
