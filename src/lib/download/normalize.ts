@@ -1,59 +1,18 @@
 import { SearchResult } from '@/lib/types';
 
-import {
-  buildDownloadVodProxyM3u8Url,
-  buildVodProxyM3u8Url,
-  isAbsoluteHttpUrl,
-  isVodProxyUrl,
-  normalizeVodProxyUrlForDesktopDownload,
-} from './proxy-url';
-
+/** Preserve addon-issued capabilities byte-for-byte; never wrap or regenerate them. */
 export function normalizeVodEpisodeUrl(
-  source: string,
+  _source: string,
   upstreamUrl: string
 ): string {
-  const normalizedUrl = upstreamUrl.trim();
-
-  if (!normalizedUrl) {
-    return normalizedUrl;
-  }
-
-  if (isVodProxyUrl(normalizedUrl)) {
-    return normalizeVodProxyUrlForDesktopDownload(normalizedUrl);
-  }
-
-  if (!isAbsoluteHttpUrl(normalizedUrl)) {
-    return normalizedUrl;
-  }
-
-  return buildVodProxyM3u8Url({
-    source,
-    url: normalizedUrl,
-  });
+  return upstreamUrl.trim();
 }
 
 export function normalizeVodEpisodeUrlForDownload(
   source: string,
   upstreamUrl: string
 ): string {
-  const normalizedUrl = upstreamUrl.trim();
-
-  if (!normalizedUrl) {
-    return normalizedUrl;
-  }
-
-  if (isVodProxyUrl(normalizedUrl)) {
-    return normalizeVodProxyUrlForDesktopDownload(normalizedUrl);
-  }
-
-  if (!isAbsoluteHttpUrl(normalizedUrl)) {
-    return normalizedUrl;
-  }
-
-  return buildDownloadVodProxyM3u8Url({
-    source,
-    url: normalizedUrl,
-  });
+  return normalizeVodEpisodeUrl(source, upstreamUrl);
 }
 
 export function normalizeVodDetailForPlayback(
@@ -61,8 +20,8 @@ export function normalizeVodDetailForPlayback(
 ): SearchResult {
   return {
     ...detail,
-    episodes: detail.episodes.map((episodeUrl) =>
-      normalizeVodEpisodeUrl(detail.source, episodeUrl)
+    episodes: detail.episodes.map((url) =>
+      normalizeVodEpisodeUrl(detail.source, url)
     ),
   };
 }
@@ -70,5 +29,5 @@ export function normalizeVodDetailForPlayback(
 export function normalizeVodSearchResultsForPlayback(
   results: SearchResult[]
 ): SearchResult[] {
-  return results.map((result) => normalizeVodDetailForPlayback(result));
+  return results.map(normalizeVodDetailForPlayback);
 }

@@ -1,4 +1,6 @@
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
+import { fetchContentDetail } from '@/lib/content-discovery-client';
+import { refreshMediaCandidates } from '@/lib/core/media/media-capability';
 import { searchPlaybackSources } from '@/lib/playback-source-client';
 import { SearchResult } from '@/lib/types';
 
@@ -628,9 +630,15 @@ class DownloadManager {
   private async resolveManifestCandidateUrls(
     task: DownloadTask
   ): Promise<string[]> {
-    const currentCandidates = mergeManifestCandidateUrls(
-      task.manifestCandidateUrls || [],
-      task.entryManifestUrl ? [task.entryManifestUrl] : []
+    const currentCandidates = await refreshMediaCandidates(
+      mergeManifestCandidateUrls(
+        task.manifestCandidateUrls || [],
+        task.entryManifestUrl ? [task.entryManifestUrl] : []
+      ),
+      async () => {
+        const fresh = await fetchContentDetail({ source: task.source, id: task.vodId });
+        return fresh.episodes[task.episodeIndex] ? [fresh.episodes[task.episodeIndex]] : [];
+      }
     );
 
     if (currentCandidates.length > 1 || !task.title.trim()) {

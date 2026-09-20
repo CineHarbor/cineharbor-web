@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const requiredSmokes = [
+  'wasm-fetch-policy-smoke',
   'wasm-cdp-smoke',
   'addon-cross-origin-smoke',
   'vod-cross-origin-smoke',

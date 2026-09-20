@@ -25,23 +25,11 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/+$/, "");
 }
 
-function mediaProxyToken(): string {
-  return (
-    process.env.NEXT_PUBLIC_MEDIA_PROXY_TOKEN ||
-    process.env.MEDIA_PROXY_TOKEN ||
-    ""
-  ).trim();
-}
-
 function buildProxyUrl(
   baseUrl: string,
   path: string,
   params: URLSearchParams
 ): string {
-  const token = mediaProxyToken();
-  if (token) {
-    params.set("token", token);
-  }
   return `${normalizeBaseUrl(baseUrl)}${path}?${params.toString()}`;
 }
 

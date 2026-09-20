@@ -257,6 +257,7 @@ describe('DesktopReleaseHistoryDialog', () => {
   });
 
   afterEach(() => {
+    delete process.env.NEXT_PUBLIC_RELEASE_REPOSITORY;
     jest.restoreAllMocks();
     delete window.RUNTIME_CONFIG;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -274,7 +275,7 @@ describe('DesktopReleaseHistoryDialog', () => {
       await screen.findByTestId('desktop-release-card-desktop-v200.0.0-beta.15')
     ).toBeInTheDocument();
     expect(mockFetchDesktopReleaseHistory).toHaveBeenCalledWith(
-      'jaytantech3000/CineHarbor'
+      'CineHarbor/cineharbor-desktop'
     );
     expect(global.fetch).not.toHaveBeenCalled();
   });
@@ -293,7 +294,7 @@ describe('DesktopReleaseHistoryDialog', () => {
       await screen.findByTestId('desktop-release-card-desktop-v200.0.0-beta.15')
     ).toBeInTheDocument();
     expect(mockFetchDesktopReleaseHistory).toHaveBeenCalledWith(
-      'jaytantech3000/CineHarbor'
+      'CineHarbor/cineharbor-desktop'
     );
     expect(global.fetch).not.toHaveBeenCalled();
   });
@@ -320,7 +321,7 @@ describe('DesktopReleaseHistoryDialog', () => {
             publishedAt: '2026-06-19T05:01:04Z',
             htmlUrl: 'https://example.com/beta-16',
             manifestUrl:
-              'https://proxy.example.com/api/desktop/updater/latest?repo=jaytantech3000%2FCineHarbor&tag=desktop-v200.0.0-beta.16',
+              'https://proxy.example.com/api/desktop/updater/latest?repo=CineHarbor%2Fcineharbor-desktop&tag=desktop-v200.0.0-beta.16',
           },
         ],
       })
@@ -335,10 +336,10 @@ describe('DesktopReleaseHistoryDialog', () => {
       await screen.findByTestId('desktop-release-card-desktop-v200.0.0-beta.16')
     ).toBeInTheDocument();
     expect(mockFetchDesktopReleaseHistory).toHaveBeenCalledWith(
-      'jaytantech3000/CineHarbor'
+      'CineHarbor/cineharbor-desktop'
     );
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://proxy.example.com/api/desktop/releases?repo=jaytantech3000%2FCineHarbor',
+      'https://proxy.example.com/api/desktop/releases?repo=CineHarbor%2Fcineharbor-desktop',
       expect.objectContaining({
         cache: 'no-store',
       })
@@ -362,7 +363,7 @@ describe('DesktopReleaseHistoryDialog', () => {
     ).toBeInTheDocument();
     expect(mockFetchDesktopReleaseHistory).not.toHaveBeenCalled();
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://api.github.com/repos/jaytantech3000/CineHarbor/releases?per_page=100',
+      'https://api.github.com/repos/CineHarbor/cineharbor-desktop/releases?per_page=100',
       expect.objectContaining({
         cache: 'no-store',
         headers: expect.objectContaining({
@@ -396,14 +397,15 @@ describe('DesktopReleaseHistoryDialog', () => {
     );
     expect(global.fetch).toHaveBeenNthCalledWith(
       2,
-      'https://api.github.com/repos/jaytantech3000/CineHarbor/releases?per_page=100',
+      'https://api.github.com/repos/CineHarbor/cineharbor-desktop/releases?per_page=100',
       expect.objectContaining({
         cache: 'no-store',
       })
     );
   });
 
-  it('falls back to the local desktop changelog when all remote sources fail', async () => {
+  it('retains local changelog fallback only for its original upstream repository', async () => {
+    process.env.NEXT_PUBLIC_RELEASE_REPOSITORY = 'jaytantech3000/CineHarbor';
     window.RUNTIME_CONFIG = {
       APP_TARGET: 'desktop',
     };
@@ -429,6 +431,16 @@ describe('DesktopReleaseHistoryDialog', () => {
     expect(screen.queryByText(/GitHub API error 403/i)).not.toBeInTheDocument();
   });
 
+  it('does not suggest imported releases when canonical release discovery fails', async () => {
+    window.RUNTIME_CONFIG = { APP_TARGET: 'desktop' };
+    mockIsDesktopTauriRuntimeAvailable.mockReturnValue(false);
+    global.fetch = jest.fn(async () => createJsonFetchResponse({ message: 'Unavailable' }, 503)) as unknown as typeof fetch;
+    renderDialog();
+    expect(await screen.findByText(/GitHub API error 503/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-release-card-desktop-v200.0.1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('desktop-release-card-desktop-v200.0.0-beta.15')).not.toBeInTheDocument();
+  });
+
   it('shows a current tag for the running version', async () => {
     renderDialog();
 
@@ -445,7 +457,7 @@ describe('DesktopReleaseHistoryDialog', () => {
       APP_TARGET: 'desktop',
     };
     const compareUrl =
-      'https://github.com/jaytantech3000/CineHarbor/compare/desktop-v200.0.0-beta.15...desktop-v200.0.0-beta.16';
+      'https://github.com/CineHarbor/cineharbor-desktop/compare/desktop-v200.0.0-beta.15...desktop-v200.0.0-beta.16';
     mockFetchDesktopReleaseHistory.mockResolvedValueOnce([
       {
         id: 'release-200',
@@ -512,7 +524,7 @@ describe('DesktopReleaseHistoryDialog', () => {
     mockFetchDesktopReleaseHistory.mockResolvedValueOnce(
       Array.from({ length: 30 }, (_, index) => {
         const buildNumber = 30 - index;
-        const compareUrl = `https://github.com/jaytantech3000/CineHarbor/compare/desktop-v200.0.2-beta.${
+        const compareUrl = `https://github.com/CineHarbor/cineharbor-desktop/compare/desktop-v200.0.2-beta.${
           buildNumber - 1
         }...desktop-v200.0.2-beta.${buildNumber}`;
         return {
@@ -563,7 +575,7 @@ describe('DesktopReleaseHistoryDialog', () => {
       APP_TARGET: 'desktop',
     };
     const compareUrl =
-      'https://github.com/jaytantech3000/CineHarbor/compare/desktop-v200.0.1-beta.7...desktop-v200.0.1-beta.8';
+      'https://github.com/CineHarbor/cineharbor-desktop/compare/desktop-v200.0.1-beta.7...desktop-v200.0.1-beta.8';
     mockFetchDesktopReleaseHistory.mockResolvedValueOnce([
       {
         id: 'beta-8',
@@ -624,7 +636,7 @@ describe('DesktopReleaseHistoryDialog', () => {
       APP_TARGET: 'desktop',
     };
     const compareUrl =
-      'https://github.com/jaytantech3000/CineHarbor/compare/desktop-v100.1.3...desktop-v200.0.0';
+      'https://github.com/CineHarbor/cineharbor-desktop/compare/desktop-v100.1.3...desktop-v200.0.0';
     mockFetchDesktopReleaseHistory.mockResolvedValueOnce([
       {
         id: 'release-200',
@@ -666,7 +678,7 @@ describe('DesktopReleaseHistoryDialog', () => {
       APP_TARGET: 'desktop',
     };
     const compareUrl =
-      'https://github.com/jaytantech3000/CineHarbor/compare/desktop-v200.0.1-beta.4...desktop-v200.0.1-beta.5';
+      'https://github.com/CineHarbor/cineharbor-desktop/compare/desktop-v200.0.1-beta.4...desktop-v200.0.1-beta.5';
     mockFetchDesktopReleaseHistory.mockResolvedValueOnce([
       {
         id: 'beta-5',

@@ -15,17 +15,17 @@ describe('release url helpers', () => {
     };
 
     expect(getDesktopReleaseHistoryProxyUrl()).toBe(
-      'https://proxy.example.com/api/desktop/releases?repo=jaytantech3000%2FCineHarbor'
+      'https://proxy.example.com/api/desktop/releases?repo=CineHarbor%2Fcineharbor-desktop'
     );
     expect(getDesktopUpdaterVersionProxyUrl()).toBe(
-      'https://proxy.example.com/api/desktop/updater/version?repo=jaytantech3000%2FCineHarbor&branch=desktop-updater'
+      'https://proxy.example.com/api/desktop/updater/version?repo=CineHarbor%2Fcineharbor-desktop&branch=desktop-updater'
     );
     expect(
       getDesktopUpdaterManifestProxyUrl({
         tagName: 'desktop-v200.0.0',
       })
     ).toBe(
-      'https://proxy.example.com/api/desktop/updater/latest?repo=jaytantech3000%2FCineHarbor&tag=desktop-v200.0.0'
+      'https://proxy.example.com/api/desktop/updater/latest?repo=CineHarbor%2Fcineharbor-desktop&tag=desktop-v200.0.0'
     );
   });
 });

@@ -99,20 +99,21 @@ function buildDownloadedContentMeta(
 
 describe('download manager manifest candidate helpers', () => {
   it('keeps the current source first and preserves distinct proxy candidates', () => {
+    const issued = (source: string, media: string) => `https://addon.test/prefix/media/vod/m3u8?source=${source}&url=${encodeURIComponent(media)}&expires=4102444800&sig=${'a'.repeat(43)}`;
     const current = buildSearchResult({
       source: 'feifan',
       source_name: '非凡资源',
-      episodes: ['https://example.com/blocked/index.m3u8'],
+      episodes: [issued('feifan', 'https://example.com/blocked/index.m3u8')],
     });
     const duplicate = buildSearchResult({
       source: 'feifan-copy',
       source_name: '非凡资源镜像',
-      episodes: ['https://example.com/blocked/index.m3u8'],
+      episodes: [issued('feifan-copy', 'https://example.com/blocked/index.m3u8')],
     });
     const playable = buildSearchResult({
       source: 'ikun',
       source_name: 'iKun资源',
-      episodes: ['https://example.com/playable/index.m3u8'],
+      episodes: [issued('ikun', 'https://example.com/playable/index.m3u8')],
     });
     const proxied = buildSearchResult({
       source: 'bfzy',
@@ -135,9 +136,9 @@ describe('download manager manifest candidate helpers', () => {
         missingEpisode,
       ])
     ).toEqual([
-      'http://127.0.0.1:11473/media/vod/m3u8?source=feifan&url=https%3A%2F%2Fexample.com%2Fblocked%2Findex.m3u8',
-      'http://127.0.0.1:11473/media/vod/m3u8?source=feifan-copy&url=https%3A%2F%2Fexample.com%2Fblocked%2Findex.m3u8',
-      'http://127.0.0.1:11473/media/vod/m3u8?source=ikun&url=https%3A%2F%2Fexample.com%2Fplayable%2Findex.m3u8',
+      issued('feifan', 'https://example.com/blocked/index.m3u8'),
+      issued('feifan-copy', 'https://example.com/blocked/index.m3u8'),
+      issued('ikun', 'https://example.com/playable/index.m3u8'),
       '/api/proxy/vod/m3u8?source=bfzy&url=https%3A%2F%2Fexample.com%2Fcached.m3u8',
     ]);
   });

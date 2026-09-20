@@ -53,14 +53,13 @@ describe('download proxy url helpers', () => {
     expect(normalizeVodEpisodeUrl('demo', proxiedUrl)).toBe(proxiedUrl);
   });
 
-  it('normalizes upstream manifest urls to same-origin proxy urls', () => {
+  it('preserves direct addon streams instead of synthesizing unsigned proxy urls', () => {
     const normalizedUrl = normalizeVodEpisodeUrl(
       'demo',
       'https://example.com/video/master.m3u8'
     );
 
-    expect(normalizedUrl).toContain('/media/vod/m3u8?');
-    expect(normalizedUrl).toContain('source=demo');
+    expect(normalizedUrl).toBe('https://example.com/video/master.m3u8');
   });
 
   it('builds download manifest urls through the shared VOD proxy', () => {

@@ -6,6 +6,7 @@ const retiredCaches = new Set([
   'cross-origin',
   'core-wasm',
   'addon-meta',
+  'cineharbor-public-addon-meta-v1',
   'static-audio-assets',
   'static-video-assets',
   'static-data-assets',
