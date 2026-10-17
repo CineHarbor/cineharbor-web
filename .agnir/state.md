@@ -53,3 +53,7 @@ Web main 97cf1bf5 still has the original preview-only `searchPlaybackSources` im
 ### 2026-10-18 verified SDK/Core security pin alignment
 
 Addon SDK 10ce024c9f5b1ea739fca9e239488ee4411f403c and Core dc94a185cade51d951780248e11a669ece770f65 each passed all mandatory main CI lanes twice at exact SHAs after their independently fixed rustls lock 0.23.45 updates. Web now pins those verified dependencies, replacing old release-unit SHAs, with new Web/Next 15 runtime/quality CI pending. The updated Web candidate changes the committed source pin only; immutable checkout gates check exact sibling refs. Desktop must only advance after the final Web revision has two main CI passes. No claim of browser/native runtime acceptance yet.
+
+### 2026-10-18 Next 15 Jest runtime compatibility
+
+Web CI 39061695910 passed typecheck and strict lint but failed Jest setup for all 134 suites before running tests: Next 15 no longer provides private `next/dist/compiled/node-fetch`. The repair uses Node 22 process-realm native Fetch constructors (static VM access) under Jest's jsdom VM; no new dependency or mocked HTTP behavior, no disabled suites. CI remains required to establish actual runtime compatibility and complete test execution.

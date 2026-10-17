@@ -17,3 +17,7 @@ Old Web PR #1 head 0b3cba81bf2516c3aba97c59df60b1afb4b769ed is conflicted and hi
 ## Final verified upstream inputs
 
 SDK main 10ce024c9f5b1ea739fca9e239488ee4411f403c passed 39060396338 and 39060462972; Core main dc94a185cade51d951780248e11a669ece770f65 passed 39060680237 and 39060804061. Their independent lock graphs now use patched rustls 0.23.45. Web's `ci/dependencies.json` is advanced to exactly these immutable SHAs. A changed Web dependency checkout can only be certified by fresh full WASM/Next production/browser CI and later two exact merged main executions, not previous Web runs.
+
+## Jest fetch polyfill migration
+
+CI run 39061695910 quality job failed after successful typecheck/lint: all 134 Jest suites failed at `jest.setup.js` importing removed private `next/dist/compiled/node-fetch`, with zero tests actually run. Replaced it with fixed-expression `node:vm.runInThisContext` sourcing native Node 22 global Headers/Request/Response outside Jest's jsdom sandbox. Node 22.16.0 local validation found the constructors available and basic Response creation works. No external HTTP, arbitrary VM expression or user data is evaluated, and all previous test suites remain enabled. Fresh PR CI is needed before success claim.

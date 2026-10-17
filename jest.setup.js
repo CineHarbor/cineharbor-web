@@ -3,7 +3,14 @@ import '@testing-library/jest-dom/extend-expect';
 
 const { TextDecoder, TextEncoder } = require('util');
 const { ReadableStream } = require('stream/web');
-const { Headers, Request, Response } = require('next/dist/compiled/node-fetch');
+// Jest's jsdom sandbox does not expose Node's stable Fetch globals. The
+// test runner is pinned to Node 22; obtain its native constructors from the
+// trusted Node process realm instead of an undocumented Next.js internal path.
+// The VM expression is a fixed literal, never derived from test or app input.
+const { runInThisContext } = require('node:vm');
+const { Headers, Request, Response } = runInThisContext(
+  '({ Headers: globalThis.Headers, Request: globalThis.Request, Response: globalThis.Response })'
+);
 
 if (typeof global.TextEncoder === 'undefined') {
   global.TextEncoder = TextEncoder;
