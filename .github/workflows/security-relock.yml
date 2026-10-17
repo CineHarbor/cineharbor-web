@@ -1,0 +1,45 @@
+name: Generate patched Web security dependency lock
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  generate:
+    if: ${{ github.repository == 'CineHarbor/cineharbor-web' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/web-next-swiper-security-20261018' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Generate exact patched dependency lock without committing
+        run: |
+          set -euo pipefail
+          pnpm add --save-exact --ignore-scripts next@15.5.27 swiper@12.1.2
+          pnpm add --save-dev --save-exact --ignore-scripts eslint-config-next@15.5.27 postcss@8.5.23 typescript@5.9.3
+          pnpm install --frozen-lockfile --ignore-scripts
+          node - <<'NODE'
+          const fs = require('node:fs');
+          for (const name of ['package.json', 'pnpm-lock.yaml']) {
+            const encoded = fs.readFileSync(name).toString('base64');
+            console.log('@@LOCK_START:' + name + ':' + encoded.length + '@@');
+            for (let i = 0; i < encoded.length; i += 4096) console.log('@@LOCK_CHUNK:' + name + ':' + encoded.slice(i, i + 4096) + '@@');
+            console.log('@@LOCK_END:' + name + '@@');
+          }
+          NODE
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-security-relock-${{ github.run_id }}
+          path: |
+            package.json
+            pnpm-lock.yaml
+          if-no-files-found: error
+          retention-days: 7

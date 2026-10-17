@@ -33,3 +33,7 @@ The changed candidate passed a real local production build (56 pages and type/li
 These results do not certify native installation, signed updater, deployed services or complete browser product E2E. Remote CI must be observed at the new main revision. RT real-feed integration and expanded experimental music/follow/cache scope remain post-1.0; existing supported paths must not regress.
 
 Project identity `urn:cineharbor:project:cineharbor-web`, lineage `urn:cineharbor:lineage:cineharbor-web`, Agnir Core/Profile 1.0 / repository-filesystem/1.0 and operations 1.0.2 at `b5626394ec40a5cb7a28c01892acde07cc0adc8e` are unchanged. License baseline: CC-BY-NC-SA-4.0.
+
+## 2026-10-18 Web dependency security candidate
+
+The canonical audit found 32 historical Web advisories, including critical findings for Next.js 14.x and Swiper 11.x. A trusted read-only PR workflow now generates frozen-installable Next.js 15.5.27 + eslint-config-next 15.5.27, Swiper 12.1.2, PostCSS 8.5.23 and TypeScript 5.9.3 package/lock candidates on hosted Node 22/pnpm 10.14.0. The initial workflow adds no dependency modifications until its generated artifacts and CI results are reconciled into a coherent reviewed commit. Full Jest/typecheck/lint, seven runtime scripts, WASM and production Web/Desktop exports must pass before promotion. No advisory ignore, no release. RELEASE_READY=false.
