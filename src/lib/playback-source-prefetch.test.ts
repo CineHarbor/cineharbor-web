@@ -277,6 +277,42 @@ describe('playback source prefetch helpers', () => {
     expect(search).toHaveBeenNthCalledWith(2, '雨霖铃 2026');
   });
 
+  it('hydrates addon catalog previews through meta and streams before returning playback sources', async () => {
+    const preview = buildSearchResult({
+      id: '101',
+      title: '星际穿越',
+      source: 'mock',
+      source_name: 'MockSite',
+      year: '2014',
+      type_name: 'movie',
+      episodes: [],
+      episodes_titles: [],
+    });
+    const detail = buildSearchResult({
+      id: '101',
+      title: '星际穿越',
+      source: 'mock',
+      source_name: 'MockSite',
+      year: '2014',
+      type_name: 'movie',
+      episodes: ['http://127.0.0.1:11473/media/vod/m3u8?source=mock&url=x'],
+      episodes_titles: ['正片'],
+    });
+    const search = jest.fn().mockResolvedValue([preview]);
+    const detailMock = jest.fn().mockResolvedValue(detail);
+    getDataSourceMock.mockReturnValue({ search, detail: detailMock });
+
+    const results = await searchPlaybackSources({
+      title: '星际穿越',
+      year: '2014',
+      searchType: 'movie',
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0].episodes).toHaveLength(1);
+    expect(detailMock).toHaveBeenCalledWith('movie', 'vod:mock:101');
+  });
+
   it('uses the desktop local service playback prefetch route in desktop mode', async () => {
     const originalFetch = global.fetch;
     const safeMatch = buildSearchResult({

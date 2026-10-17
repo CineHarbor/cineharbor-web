@@ -5,7 +5,10 @@ import { SearchResult } from '@/lib/types';
 import { getVideoResolutionFromM3u8 } from '@/lib/utils';
 import { filterAdultContentResults } from '@/lib/yellow';
 
-import { fetchContentSearchResults } from './content-discovery-client';
+import {
+  fetchContentDetail,
+  fetchContentSearchResults,
+} from './content-discovery-client';
 
 export interface PlaybackSourceMetrics {
   quality: string;
@@ -315,6 +318,26 @@ function calculateSourceScore(
   );
 }
 
+function getProtocolTypeHint(result: SearchResult): 'movie' | 'series' | null {
+  const typeHint = `${result.class || ''} ${result.type_name || ''}`
+    .trim()
+    .toLowerCase();
+
+  if (
+    typeHint.includes('series') ||
+    typeHint.includes('tv') ||
+    typeHint.includes('剧')
+  ) {
+    return 'series';
+  }
+
+  if (typeHint.includes('movie') || typeHint.includes('电影')) {
+    return 'movie';
+  }
+
+  return null;
+}
+
 function matchesSearchType(
   result: SearchResult,
   searchType: string | undefined
@@ -323,12 +346,14 @@ function matchesSearchType(
     return true;
   }
 
+  const protocolType = getProtocolTypeHint(result);
+
   if (searchType === 'tv') {
-    return result.episodes.length > 1;
+    return result.episodes.length > 1 || protocolType === 'series';
   }
 
   if (searchType === 'movie') {
-    return result.episodes.length === 1;
+    return result.episodes.length === 1 || protocolType === 'movie';
   }
 
   return true;
@@ -416,6 +441,38 @@ async function fetchPlaybackSearchQuery(
     credentials: 'same-origin',
     allowAdultResults,
   });
+}
+
+async function hydratePlaybackSources(
+  sources: SearchResult[]
+): Promise<SearchResult[]> {
+  const hydrated = await Promise.all(
+    sources.map(async (source) => {
+      if (source.episodes.length > 0) {
+        return source;
+      }
+
+      try {
+        const detail = await fetchContentDetail({
+          source: source.source,
+          id: source.id,
+          type: getProtocolTypeHint(source) || undefined,
+        });
+
+        return normalizeVodSearchResultsForPlayback([
+          {
+            ...source,
+            ...detail,
+            douban_id: detail.douban_id || source.douban_id,
+          },
+        ])[0];
+      } catch {
+        return null;
+      }
+    })
+  );
+
+  return hydrated.filter((source): source is SearchResult => source !== null);
 }
 
 function shouldUseDesktopPlaybackSourcePrefetch(): boolean {
@@ -595,12 +652,15 @@ export async function searchPlaybackSources(
       (hasExactDoubanMatch(sources, expectedDoubanId) &&
         hasHighConfidenceDoubanMatch(sources, params))
     ) {
-      return sources;
+      const hydratedSources = await hydratePlaybackSources(sources);
+      if (hydratedSources.length > 0) {
+        return hydratedSources;
+      }
     }
   }
 
   if (fallbackSources.length > 0) {
-    return fallbackSources;
+    return hydratePlaybackSources(fallbackSources);
   }
 
   if (successfulQueryCount === 0 && lastError) {

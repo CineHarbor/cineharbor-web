@@ -45,3 +45,7 @@ Hosted security relock run 39060848405 succeeded: actual pnpm 10.14.0/Node 22 pr
 ### 2026-10-18 first upgraded TypeScript regression
 
 Web security candidate 53dd42c CI run 39061016682 failed typecheck with four TS5.9 generic `Float32Array<ArrayBufferLike>` vs Web Audio API `Float32Array<ArrayBuffer>` incompatibilities in the audio spike protection runtime. This patch narrows only actual allocated curve/analyser typed-array declarations to `Float32Array<ArrayBuffer>`, preserving numeric buffer behavior. Source Web tests, runtime integration and release builds must rerun; no lint exclusion/casts or type suppression. The earlier failing run is a real negative regression record.
+
+### 2026-10-18 catalog-preview hydration transfer (Web PR #1 outstanding behavior)
+
+Web main 97cf1bf5 still has the original preview-only `searchPlaybackSources` implementation: Stremio catalog results with no episodes can be returned to playback source choice without fetching addon meta/streams, and `fetchContentDetail` only tries `movie` despite series support. The old conflicted PR #1 (head 0b3cba81) contains the isolated reviewed source+Jest repairs; four relevant files were verified byte-identical to the present base predecessor and transferred by exact Git blob SHAs (details in evidence) without importing its obsolete 1.0 pin metadata or failed old release tests. The new branch first needs complete upgraded Next15 Jest/type/browser CI; do NOT claim playback acceptance yet. Old PR #1 can be closed only after the equivalent repair is verified on main.
