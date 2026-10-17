@@ -37,3 +37,7 @@ Project identity `urn:cineharbor:project:cineharbor-web`, lineage `urn:cineharbo
 ## 2026-10-18 Web dependency security candidate
 
 The canonical audit found 32 historical Web advisories, including critical findings for Next.js 14.x and Swiper 11.x. A trusted read-only PR workflow now generates frozen-installable Next.js 15.5.27 + eslint-config-next 15.5.27, Swiper 12.1.2, PostCSS 8.5.23 and TypeScript 5.9.3 package/lock candidates on hosted Node 22/pnpm 10.14.0. The initial workflow adds no dependency modifications until its generated artifacts and CI results are reconciled into a coherent reviewed commit. Full Jest/typecheck/lint, seven runtime scripts, WASM and production Web/Desktop exports must pass before promotion. No advisory ignore, no release. RELEASE_READY=false.
+
+### 2026-10-18 generated lock applied for review
+
+Hosted security relock run 39060848405 succeeded: actual pnpm 10.14.0/Node 22 produced package blob 0d8d65b7e5ccce42593e48950212f35ef5d4c5d6 and lock blob 856bce36cafe29582f9fa7c626a08e5e04f999ef, and a frozen install passed. Only declared package specifiers changed: Next 15.5.27, Swiper 12.1.2, eslint-config-next 15.5.27, PostCSS 8.5.23 and TypeScript 5.9.3 (actual resolved versions captured in pnpm lock). Complete source build, all 714+ Jest tests, browser/PWA/runtime smoke and audit are **NOT YET VERIFIED** on this new candidate until PR CI. Do not merge a failing upgrade.
