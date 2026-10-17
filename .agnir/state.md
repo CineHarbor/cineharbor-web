@@ -33,3 +33,7 @@ The changed candidate passed a real local production build (56 pages and type/li
 These results do not certify native installation, signed updater, deployed services or complete browser product E2E. Remote CI must be observed at the new main revision. RT real-feed integration and expanded experimental music/follow/cache scope remain post-1.0; existing supported paths must not regress.
 
 Project identity `urn:cineharbor:project:cineharbor-web`, lineage `urn:cineharbor:lineage:cineharbor-web`, Agnir Core/Profile 1.0 / repository-filesystem/1.0 and operations 1.0.2 at `b5626394ec40a5cb7a28c01892acde07cc0adc8e` are unchanged. License baseline: CC-BY-NC-SA-4.0.
+
+## 2026-10-18 security-corrected pinned source candidate
+
+After SDK 10ce024c9f5b1ea739fca9e239488ee4411f403c (rustls 0.23.45 lock fix) and Core dc94a185cade51d951780248e11a669ece770f65 (pins patched SDK and rustls), both passed their complete main CI matrices twice, Web advances its immutable dependency manifest to exactly those revisions. Application source and pnpm lock are unchanged. Require full Web PR CI and two fresh main CI runs before Desktop repins and rebuilds all installed artifacts. This change does not address Web's own Next/Swiper/high dependency findings, player UI/product acceptance or published binaries. RELEASE_READY=false; PUBLIC_RELEASE_EXECUTED=false.

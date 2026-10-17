@@ -1,0 +1,3 @@
+# Patched Core/SDK immutable Web pin candidate — 2026-10-18
+
+Verified source inputs: SDK `10ce024c9f5b1ea739fca9e239488ee4411f403c`, complete main CI `39060396338` and `39060462972`; Core `dc94a185cade51d951780248e11a669ece770f65`, complete main CI `39060680237` and `39060804061`. Both contain repaired rustls lock resolution; Core locks the exact above SDK commit. This Web candidate updates only ci/dependencies.json plus evidence/state/next actions, leaving production implementation and Node lock untouched. This cannot be called passing Web or installed Desktop without new exact-revision CI. Signing deferred and no publication.
