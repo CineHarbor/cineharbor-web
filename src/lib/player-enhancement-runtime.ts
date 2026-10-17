@@ -160,7 +160,7 @@ function measureAudioBufferLevels(buffer: Float32Array): {
 export function buildHardLimiterCurve(
   ceilingDb: number,
   resolution = 4096
-): Float32Array {
+): Float32Array<ArrayBuffer> {
   const safeResolution = Math.max(3, Math.trunc(resolution));
   const limit = clamp(dbToLinear(ceilingDb), 0.01, 1);
   const curve = new Float32Array(safeResolution);
@@ -558,9 +558,9 @@ class AudioSpikeProtectionController {
   private outputAnalyserNode: AnalyserNode | null = null;
   private limiterNode: WaveShaperNode | null = null;
   private outputGainNode: GainNode | null = null;
-  private inputAnalysisBuffer: Float32Array | null = null;
-  private inputFrequencyAnalysisBuffer: Float32Array | null = null;
-  private outputAnalysisBuffer: Float32Array | null = null;
+  private inputAnalysisBuffer: Float32Array<ArrayBuffer> | null = null;
+  private inputFrequencyAnalysisBuffer: Float32Array<ArrayBuffer> | null = null;
+  private outputAnalysisBuffer: Float32Array<ArrayBuffer> | null = null;
   private monitorTimerId: number | null = null;
   private baselineDb: number | null = null;
   private baselineHistory: number[] = [];

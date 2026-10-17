@@ -5,3 +5,7 @@ Base Web main 97cf1bf55033ed16a2f0f77a97c28848aa323956. Immutable audit run 3551
 ## Generated artifacts inspected and applied
 
 PR-only generation run 39060848405 succeeded at the selected branch. Workflow emitted complete chunked base64 package.json (4284 chars) and pnpm-lock.yaml (548508 chars) and uploaded source files. Verified both full start/chunk/end records and exact encoded-length, decoded package manifest, and compared to base: exactly five specified dependencies changed. Official Git blobs accepted SHA 0d8d65b7e5ccce42593e48950212f35ef5d4c5d6 (package.json), 856bce36cafe29582f9fa7c626a08e5e04f999ef (pnpm-lock.yaml). No self-modifying workflows, credential access, signing or public releases. This new source candidate requires the full Web PR and twice-main CI, including real WASM/browser. No claim that dependency findings are cleared until a fresh audit executes.
+
+## TypeScript 5.9 migration repair
+
+Full Web candidate run 39061016682 quality job typecheck failed at player-enhancement-runtime.ts lines 705, 798, 800, 834 with `Float32Array<ArrayBufferLike>` not assignable to DOM-required `Float32Array<ArrayBuffer>`. The audio curves and analyser buffers are already created as allocated `new Float32Array(length)`, whose backing store is ArrayBuffer. Explicitly type their return and three stored buffers as `Float32Array<ArrayBuffer>` and preserve all calculation/monitor logic. Full hosted regression is pending at the repaired candidate SHA.
