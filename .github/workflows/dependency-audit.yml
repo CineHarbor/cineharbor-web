@@ -1,0 +1,54 @@
+name: Web dependency advisory review
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Frozen Web lock and high/critical dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      HUSKY: '0'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install the exact frozen dependency graph
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Preserve complete audit output and fail on high or critical findings
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          pnpm audit --json --audit-level high > dependency-audit.json 2> dependency-audit-stderr.txt
+          result=$?
+          set -e
+          node -e "const fs=require('node:fs'); const file='dependency-audit.json'; if (!fs.existsSync(file)||fs.statSync(file).size===0) { console.error('Missing advisory response'); process.exit(1) } try { let a=JSON.parse(fs.readFileSync(file,'utf8')); console.log('Audit response parsed; inspect the artifact for exact advisories.'); if(a.metadata?.vulnerabilities) console.log(JSON.stringify(a.metadata.vulnerabilities)); } catch(e) { console.error('Audit response is not valid JSON'); process.exit(1) }"
+          if [ "$result" -ne 0 ]; then
+            echo 'Frozen dependency audit contains blocking findings or failed to complete.' >&2
+            exit "$result"
+          fi
+      - name: Preserve reviewed security evidence regardless of audit result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dependency-audit-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            dependency-audit.json
+            dependency-audit-stderr.txt
+          if-no-files-found: warn
+          retention-days: 30

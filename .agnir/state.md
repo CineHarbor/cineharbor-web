@@ -45,3 +45,7 @@ Direct runtime/build dependencies and the full pnpm frozen lock now track review
 ### First Next 15/TS 5.9 PR CI repair
 
 CI run 39395172718 reported 4 DOM audio typed-array generic errors in `player-enhancement-runtime.ts`. The owned curve and numeric-length buffers are now explicitly typed `Float32Array<ArrayBuffer>`, consistent with the browser AudioNode API. Complete CI/re-audit is still pending. No security pass or live playback acceptance claimed.
+
+### Real advisory gating
+
+The candidate adds a strict high/critical frozen-pnpm audit workflow that uploads full JSON evidence even on failure. Passing Node quality/build does not substitute for dependency review. Check artifacts at the exact revision and resolve findings without suppressions.

@@ -9,3 +9,7 @@ If production source/API adaptation is required by Next/Swiper upgrades, impleme
 ## Observed TypeScript 5.9 migration failure and repair
 
 PR #5 first CI run 39395172718 quality job 118536008108 failed 4 TypeScript typed-array generic errors in `src/lib/player-enhancement-runtime.ts`: 705 WaveShaperNode curve, 798 and 800 AnalyserNode buffers and 834 output analyser buffer. TypeScript 5.9 DOM APIs require a typed view backed by **ArrayBuffer**, while the old unspecified `Float32Array` types allow `SharedArrayBuffer`. The curve is created via `new Float32Array(length)`, and the three analyser buffers are likewise created by numeric length; therefore declare the returned curve and those three owned fields explicitly as `Float32Array<ArrayBuffer>`. Preserve actual sample analysis and all tests, no casts to `any` and no CI bypass. Must rerun the full revised PR tree; no success presumed.
+
+## Fresh advisory evidence requirement
+
+Added a read-only `.github/workflows/dependency-audit.yml` on PR/main. It performs Node 22/pnpm 10.14 frozen install with ignored lifecycle scripts and `pnpm audit --json --audit-level high` against the candidate's exact lock; high/critical findings fail the job, and the complete raw response/error are retained as immutable workflow artifacts. This is **not** an audit waiver or advisory ignore. If a registry/network error prevents audit, it fails closed and is classified separately. Must inspect actual returned advisories before claiming security release acceptance.
