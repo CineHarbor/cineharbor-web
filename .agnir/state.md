@@ -49,3 +49,7 @@ CI run 39395172718 reported 4 DOM audio typed-array generic errors in `player-en
 ### Real advisory gating
 
 The candidate adds a strict high/critical frozen-pnpm audit workflow that uploads full JSON evidence even on failure. Passing Node quality/build does not substitute for dependency review. Check artifacts at the exact revision and resolve findings without suppressions.
+
+### Next 15 Jest runner compatibility
+
+PR security relock initially failed all Jest suites at setup because the old Jest shim imports removed Next private node-fetch. The shim now bridges Node 22's own Fetch constructors through the host VM; full suites still must execute and pass. Failures are preserved as real findings, not skipped.

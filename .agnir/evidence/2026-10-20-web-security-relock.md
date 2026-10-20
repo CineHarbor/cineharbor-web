@@ -13,3 +13,7 @@ PR #5 first CI run 39395172718 quality job 118536008108 failed 4 TypeScript type
 ## Fresh advisory evidence requirement
 
 Added a read-only `.github/workflows/dependency-audit.yml` on PR/main. It performs Node 22/pnpm 10.14 frozen install with ignored lifecycle scripts and `pnpm audit --json --audit-level high` against the candidate's exact lock; high/critical findings fail the job, and the complete raw response/error are retained as immutable workflow artifacts. This is **not** an audit waiver or advisory ignore. If a registry/network error prevents audit, it fails closed and is classified separately. Must inspect actual returned advisories before claiming security release acceptance.
+
+## Jest environment migration
+
+Web CI 39395441748 quality job failed **all 134 test suites at setup**, before executing any tests: `Cannot find module 'next/dist/compiled/node-fetch' from 'jest.setup.js'`. Next 15 no longer exposes the old private bundled fetch. The test-only setup now retrieves Node 22's standards-based `Headers/Request/Response` from its underlying host VM via `node:vm.runInThisContext`, avoiding a new dependency and preserving the jsdom globals and all existing tests. This is fixed runtime input (not eval of untrusted data), and Node 22 is the project's locked CI/runtime baseline. Actual Jest execution must now pass; no test removed.
