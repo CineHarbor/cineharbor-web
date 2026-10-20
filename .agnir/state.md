@@ -53,3 +53,7 @@ The candidate adds a strict high/critical frozen-pnpm audit workflow that upload
 ### Next 15 Jest runner compatibility
 
 PR security relock initially failed all Jest suites at setup because the old Jest shim imports removed Next private node-fetch. The shim now bridges Node 22's own Fetch constructors through the host VM; full suites still must execute and pass. Failures are preserved as real findings, not skipped.
+
+### Reproducible Next 15 build files
+
+Web run 39395441748 built production Next 15, WASM and all 7 real runtime smoke suites but failed final source purity because Next generated a changed next-env.d.ts route reference. Committed the exact generated file and removed only Next 15 ignored config flags. Full CI with this source must be verified; build-only success is not broad acceptance.
