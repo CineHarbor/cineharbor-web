@@ -69,3 +69,7 @@ Exact CI-generated 2026-10-20 overrides for nine vulnerable resolved transitives
 ### Production-only exposure cross-check
 
 Added a separate production-scope frozen audit ahead of the still-required full audit, recording both JSON results. The currently sole high `braces` finding is traceable to ESLint developer tooling; confirmation that production audit is clean is **pending**. Full audit remains a failing check until explicit vulnerability disposition; no hidden ignore.
+
+### Corrected 2026-10-20 advisory scope
+
+Production-only frozen audit run 39397195391 (artifact 12252495648) **also fails** with `braces@3.0.3` high on `next-pwa > globby > fast-glob > micromatch`, not just on ESLint. The prior development-only assumption is superseded. Raw audit shows 0 critical, 1 high, 1 moderate for prod; full audit still 0 critical, 1 high, 3 moderate, 1 low. The moderate prod serialize-javascript 7.0.3 now has a published >=7.0.5 patch. No security release signoff, waiver or runtime-exposure conclusion is justified yet. A real dependency/PWA migration or documented, tested build-path risk resolution remains necessary.
