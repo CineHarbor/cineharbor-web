@@ -65,3 +65,7 @@ The previously observed 2026-10-20 frozen security audit contains 15 high and 0 
 ### Narrow transitive security patch candidate and residual advisory
 
 Exact CI-generated 2026-10-20 overrides for nine vulnerable resolved transitives are materialized in tracked package+lock together. Raw audit evidence reduced the historical 15 high to 1 high (0 critical; 3 moderate, 1 low). Residual `braces@3.0.3` high CVE-2026-93687 in dev-only eslint glob tool chain has no published patch in the recorded registry advisory. **Full advisory audit remains failing**, no waiver authorized. Generator script was single-use and is removed after source materialization. Full Web functionality CI, fresh audit and downstream installed Desktop remain mandatory. RELEASE_READY=false.
+
+### Production-only exposure cross-check
+
+Added a separate production-scope frozen audit ahead of the still-required full audit, recording both JSON results. The currently sole high `braces` finding is traceable to ESLint developer tooling; confirmation that production audit is clean is **pending**. Full audit remains a failing check until explicit vulnerability disposition; no hidden ignore.

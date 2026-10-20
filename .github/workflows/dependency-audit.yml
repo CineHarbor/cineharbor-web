@@ -29,6 +29,12 @@ jobs:
           cache: pnpm
       - name: Install the exact frozen dependency graph
         run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Audit production-only dependencies separately from tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm audit --prod --json --audit-level high > production-dependency-audit.json 2> production-dependency-audit-stderr.txt
+          node -e "const fs=require('node:fs'); const j=JSON.parse(fs.readFileSync('production-dependency-audit.json','utf8')); console.log('Production advisory counts:',JSON.stringify(j.metadata?.vulnerabilities));"
       - name: Preserve complete audit output and fail on high or critical findings
         shell: bash
         run: |
@@ -50,5 +56,7 @@ jobs:
           path: |
             dependency-audit.json
             dependency-audit-stderr.txt
+            production-dependency-audit.json
+            production-dependency-audit-stderr.txt
           if-no-files-found: warn
           retention-days: 30
