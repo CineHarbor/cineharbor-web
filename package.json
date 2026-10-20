@@ -94,5 +94,18 @@
     "typescript": "5.9.3",
     "webpack-obfuscator": "^3.5.1"
   },
-  "packageManager": "pnpm@10.14.0"
+  "packageManager": "pnpm@10.14.0",
+  "pnpm": {
+    "overrides": {
+      "semver@7.3.7": "7.7.3",
+      "serialize-javascript@4.0.0": "7.0.3",
+      "postcss@8.4.31": "8.5.23",
+      "fast-uri@3.1.6": "3.1.8",
+      "undici@6.28.0": "6.28.1",
+      "brace-expansion@1.1.18": "1.1.21",
+      "brace-expansion@2.1.4": "2.1.7",
+      "brace-expansion@5.0.9": "5.0.12",
+      "source-map-js@1.2.1": "1.2.2"
+    }
+  }
 }

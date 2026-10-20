@@ -61,3 +61,7 @@ Web run 39395441748 built production Next 15, WASM and all 7 real runtime smoke 
 ### Deterministic transitive-remediation generator
 
 The previously observed 2026-10-20 frozen security audit contains 15 high and 0 critical advisory entries after upgrading Next/Swiper. Candidate overrides for nine specific vulnerable resolved versions are generated **only** in a read-only PR workflow, with an exact frozen lock and fresh audit artifact. No `braces` workaround is invented because the advisory listed no patched release. The resulting lock must be committed coherently, CI and security audit repeated, and unsupported major replacement in serialize-javascript reviewed. Results are pending; no security pass claimed.
+
+### Narrow transitive security patch candidate and residual advisory
+
+Exact CI-generated 2026-10-20 overrides for nine vulnerable resolved transitives are materialized in tracked package+lock together. Raw audit evidence reduced the historical 15 high to 1 high (0 critical; 3 moderate, 1 low). Residual `braces@3.0.3` high CVE-2026-93687 in dev-only eslint glob tool chain has no published patch in the recorded registry advisory. **Full advisory audit remains failing**, no waiver authorized. Generator script was single-use and is removed after source materialization. Full Web functionality CI, fresh audit and downstream installed Desktop remain mandatory. RELEASE_READY=false.
