@@ -3,7 +3,13 @@ import '@testing-library/jest-dom/extend-expect';
 
 const { TextDecoder, TextEncoder } = require('util');
 const { ReadableStream } = require('stream/web');
-const { Headers, Request, Response } = require('next/dist/compiled/node-fetch');
+// Jest's jsdom context does not expose Node's built-in fetch constructors.
+// Use Node 22's own globals from the host VM instead of an unstable Next.js
+// internal module path (removed in Next 15).
+const { runInThisContext } = require('node:vm');
+const { Headers, Request, Response } = runInThisContext(
+  '({ Headers, Request, Response })'
+);
 
 if (typeof global.TextEncoder === 'undefined') {
   global.TextEncoder = TextEncoder;

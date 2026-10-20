@@ -27,12 +27,10 @@ const nextConfig = {
   },
 
   reactStrictMode: false,
-  swcMinify: false,
 
   experimental: {
     // Bound build workers on shared CI runners; preserve every route and type/lint gate.
     cpus: 2,
-    instrumentationHook: process.env.NODE_ENV === 'production',
   },
 
   // Uncoment to add domain whitelist
