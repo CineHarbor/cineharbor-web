@@ -57,3 +57,7 @@ PR security relock initially failed all Jest suites at setup because the old Jes
 ### Reproducible Next 15 build files
 
 Web run 39395441748 built production Next 15, WASM and all 7 real runtime smoke suites but failed final source purity because Next generated a changed next-env.d.ts route reference. Committed the exact generated file and removed only Next 15 ignored config flags. Full CI with this source must be verified; build-only success is not broad acceptance.
+
+### Deterministic transitive-remediation generator
+
+The previously observed 2026-10-20 frozen security audit contains 15 high and 0 critical advisory entries after upgrading Next/Swiper. Candidate overrides for nine specific vulnerable resolved versions are generated **only** in a read-only PR workflow, with an exact frozen lock and fresh audit artifact. No `braces` workaround is invented because the advisory listed no patched release. The resulting lock must be committed coherently, CI and security audit repeated, and unsupported major replacement in serialize-javascript reviewed. Results are pending; no security pass claimed.

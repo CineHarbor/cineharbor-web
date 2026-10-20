@@ -1,0 +1,75 @@
+name: Generate reviewable transitive security patch lock
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  generate:
+    if: ${{ github.repository == 'CineHarbor/cineharbor-web' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/security-next15-swiper12-reloc-20261020' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Generate exact minor/patch-overridden graph without pushing
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const filename='package.json';
+          const p=JSON.parse(fs.readFileSync(filename,'utf8'));
+          p.pnpm = {overrides: {
+            'semver@7.3.7': '7.7.3',
+            'serialize-javascript@4.0.0': '7.0.3',
+            'postcss@8.4.31': '8.5.23',
+            'fast-uri@3.1.6': '3.1.8',
+            'undici@6.28.0': '6.28.1',
+            'brace-expansion@1.1.18': '1.1.21',
+            'brace-expansion@2.1.4': '2.1.7',
+            'brace-expansion@5.0.9': '5.0.12',
+            'source-map-js@1.2.1': '1.2.2'
+          }};
+          fs.writeFileSync(filename, JSON.stringify(p,null,2)+'\n');
+          NODE
+          pnpm install --lockfile-only --ignore-scripts
+          pnpm install --frozen-lockfile --ignore-scripts
+          node - <<'NODE'
+          const fs=require('node:fs');
+          for(const filename of ['package.json','pnpm-lock.yaml']){
+            const encoded=fs.readFileSync(filename).toString('base64');
+            console.log('@@PATCH_START:'+filename+':'+encoded.length+'@@');
+            for(let i=0;i<encoded.length;i+=4096)
+              console.log('@@PATCH_CHUNK:'+filename+':'+encoded.slice(i,i+4096)+'@@');
+            console.log('@@PATCH_END:'+filename+'@@');
+          }
+          NODE
+      - name: Inspect updated advisory findings without suppressing or masking failures
+        shell: bash
+        run: |
+          set -uo pipefail
+          pnpm audit --json --audit-level high > transitive-audit.json 2> transitive-audit-stderr.txt
+          exit_code=$?
+          node -e "const fs=require('node:fs'); try{const j=JSON.parse(fs.readFileSync('transitive-audit.json','utf8')); console.log('Candidate advisory counts:',JSON.stringify(j.metadata?.vulnerabilities));}catch(e){console.error('Audit output unavailable or malformed')}"
+          echo "Candidate audit exit code: $exit_code (findings are not acceptance)"
+          exit 0
+      - name: Archive raw generated source, lock, and advisory evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-transitive-security-lock-${{ github.run_id }}
+          path: |
+            package.json
+            pnpm-lock.yaml
+            transitive-audit.json
+            transitive-audit-stderr.txt
+          if-no-files-found: warn
+          retention-days: 14
