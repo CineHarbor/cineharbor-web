@@ -1,7 +1,7 @@
-# cineharbor-web Next Actions — 2026-10-18
+# cineharbor-web Next Actions — 2026-10-20
 
-1. Verify patched Core/SDK pin candidate in full Web PR CI, then merge and run all quality, actual WASM/build and seven runtime scripts twice at exact final main SHA. The pinned Core dc94a185 and SDK 10ce024c are already twice-verified; do not count old Web builds for this new source graph.
-2. Re-pin Desktop to the exact Web/Core/SDK graph, check consistency and run full three-platform native/actual installer/sidecar/SQLite main gates twice. Preserve the user's installation-first ordering and separate signed-release deferral.
-3. Remediate confirmed Web Next/Swiper/PostCSS security findings in a compatibility-tested release lock; rerun audit without suppression. Then inspect remaining old conflicted PR #1 for unported user-facing capability.
-4. Verify real browser/installed-player VOD/Live and browser/native downloads, profiles/persistence and addon production egress/auth; audit ADR consumer boundaries, license/brand and served download site.
-5. Signing, notarization, and signed old-to-new upgrade remain deferred only until separately authorized public release. No public 1.0.0 release. RELEASE_READY=false.
+1. Review and run full PR quality + production WASM/browser/addon integration CI on the coherent Next 15.5.27 / Swiper 12.1.2 / PostCSS 8.5.23 / TypeScript 5.9.3 source-lock candidate. Fix real TS/UI/Next differences, especially lint/build route behavior, without disabling tests. Run `pnpm audit --json` at the exact lock and remediate all unacceptable findings; no CVE suppressions.
+2. Merge only after full CI passes; require two complete full main CI runs at the identical Web SHA, including strict unit/lint/build/browser acceptance.
+3. Then update Desktop immutable Web SHA (and verified patched Core dc94a185 / SDK 10ce024c), rebuild native three-platform unsigned installers and execute actual installed sidecar/SQLite persistence suites twice on final main. Do not use a pre-upgrade Desktop installer as final candidate.
+4. Perform live VOD/Live/browser download and production addon acceptance; reconcile obsolete Web PR #1, remaining content/control API consumers and full dependency/license evidence.
+5. Public signing/notarization and signed updater are intentionally deferred until separately authorized publication; no actual public 1.0.0 release. RELEASE_READY=false.
