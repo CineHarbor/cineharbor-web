@@ -1,7 +1,7 @@
-# cineharbor-web Next Actions — 2026-10-20
+# cineharbor-web Next Actions — 2026-10-21
 
-1. Review and run full PR quality + production WASM/browser/addon integration CI on the coherent Next 15.5.27 / Swiper 12.1.2 / PostCSS 8.5.23 / TypeScript 5.9.3 source-lock candidate. Fix real TS/UI/Next differences, especially lint/build route behavior, without disabling tests. Run strict `pnpm audit --json --audit-level high` at the **new exact lock**. Targeted transitive patches reduce 15 high to one unpatched `braces` CVE-2026-93687 occurring in both Next-PWA production-dependency build tooling and ESLint dev tooling; audit remains failing and requires source/impact review, never a fabricated patched version or silent ignore.
-2. Merge only after full CI passes; require two complete full main CI runs at the identical Web SHA, including strict unit/lint/build/browser acceptance.
-3. Then update Desktop immutable Web SHA (and verified patched Core dc94a185 / SDK 10ce024c), rebuild native three-platform unsigned installers and execute actual installed sidecar/SQLite persistence suites twice on final main. Do not use a pre-upgrade Desktop installer as final candidate.
-4. Perform live VOD/Live/browser download and production addon acceptance; reconcile obsolete Web PR #1, remaining content/control API consumers and full dependency/license evidence.
-5. Public signing/notarization and signed updater are intentionally deferred until separately authorized publication; no actual public 1.0.0 release. RELEASE_READY=false.
+1. Validate catalog preview movie/series hydration, details fallback and signed-URL preservation on the current Next 15 / Swiper 12 lock, with 4 focused regressions and all frozen Jest/type/lint/build/WASM/real browser/addon/PWA CI. Merge then run two exact main CI cycles.
+2. Repin Desktop pending PR #6 to the verified newer Web SHA and rerun real unsigned Windows x64, macOS Intel/Apple Silicon installer builds, live sidecar health/config and SQLite persistence; merge and verify exact-main twice. Do not certify old pinned artifacts.
+3. Keep unpatched high `braces@3.0.3` production-tree Next-PWA build-tool advisory visible; resolve or document evidence-backed decision. Full high/critical audit remains failing, no ignore.
+4. Finish real installed player/download/auth/profile GUI test on user device once final CI source is stable. Check old PR #1 for further real features; resolve production addons, ADR consumers and legal/release-site gates.
+5. Do not publish 1.0.0. Signing/notarization/signed updater deferred to Principal-approved public release, not waived. RELEASE_READY=false.
