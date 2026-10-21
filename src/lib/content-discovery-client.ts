@@ -6,8 +6,8 @@ import {
   buildSuggestions,
 } from '@/lib/core/content/suggestions';
 import { getRuntimeConfig } from '@/lib/runtime-config';
-import type { ApiFetchOptions } from '@/lib/transport/api-client';
 import type { AddonContentType } from '@/lib/transport/addon-types';
+import type { ApiFetchOptions } from '@/lib/transport/api-client';
 import { SearchResult } from '@/lib/types';
 import { filterAdultContentResults } from '@/lib/yellow';
 
