@@ -277,6 +277,34 @@ describe('playback source prefetch helpers', () => {
     expect(search).toHaveBeenNthCalledWith(2, '雨霖铃 2026');
   });
 
+  it('hydrates addon movie preview metadata before returning a playable signed stream', async () => {
+    const preview = buildSearchResult({ id: '101', title: '星际穿越', source: 'demo', year: '2014', type_name: 'movie', episodes: [], episodes_titles: [] });
+    const detail = buildSearchResult({ ...preview, episodes: ['https://media.example.test/movie.m3u8?token=opaque'], episodes_titles: ['正片'] });
+    const detailMock = jest.fn().mockResolvedValue(detail);
+    getDataSourceMock.mockReturnValue({ search: jest.fn().mockResolvedValue([preview]), detail: detailMock });
+    const result = await searchPlaybackSources({ title: '星际穿越', searchType: 'movie', year: '2014' });
+    expect(result).toHaveLength(1);
+    expect(result[0].episodes).toEqual(detail.episodes);
+    expect(detailMock).toHaveBeenCalledWith('movie', 'vod:demo:101');
+  });
+
+  it('uses a series catalog hint when a series preview has no episodes yet', async () => {
+    const preview = buildSearchResult({ id: '202', title: '测试剧集', source: 'demo', year: '2026', type_name: 'series', episodes: [], episodes_titles: [] });
+    const detail = buildSearchResult({ ...preview, episodes: ['https://media.example.test/series.m3u8'], episodes_titles: ['第1集'] });
+    const detailMock = jest.fn().mockResolvedValue(detail);
+    getDataSourceMock.mockReturnValue({ search: jest.fn().mockResolvedValue([preview]), detail: detailMock });
+    const result = await searchPlaybackSources({ title: '测试剧集', searchType: 'tv', year: '2026' });
+    expect(result).toHaveLength(1);
+    expect(result[0].episodes).toEqual(detail.episodes);
+    expect(detailMock).toHaveBeenCalledWith('series', 'vod:demo:202');
+  });
+
+  it('never presents catalog-only preview as playable if addon detail also lacks streams', async () => {
+    const preview = buildSearchResult({ id: '303', title: '无播放资源', source: 'demo', year: '2026', type_name: 'movie', episodes: [], episodes_titles: [] });
+    getDataSourceMock.mockReturnValue({ search: jest.fn().mockResolvedValue([preview]), detail: jest.fn().mockResolvedValue(preview) });
+    await expect(searchPlaybackSources({ title: '无播放资源', searchType: 'movie' })).resolves.toEqual([]);
+  });
+
   it('uses the desktop local service playback prefetch route in desktop mode', async () => {
     const originalFetch = global.fetch;
     const safeMatch = buildSearchResult({

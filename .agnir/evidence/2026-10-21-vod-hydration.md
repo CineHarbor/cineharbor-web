@@ -1,0 +1,7 @@
+# VOD catalog-preview hydration parity — 2026-10-21
+
+Current Web main `d201afb447db931a3cd4116746d535818148bfd9` returns addon catalog search skeletons with no episodes; playback source matching previously classified movies/TV solely by episode count, and returned previews without resolving addon meta/stream. This is a concrete title-card → no playable episode defect retained from historical conflicted PR #1; do not merge its old versions or make unrelated SDK changes.
+
+This narrow candidate brings protocol type hint `movie|series`, addon meta+stream hydration only when episodes are missing, cross-type detail fallback, and rejection of still-unplayable details, while preserving already-playable source URLs, adult filtering and the existing Desktop prefetch API. Unit regressions cover movie, series, missing detail streams and series-first fallback. Full frozen Jest/lint/type, WASM, Next 15 and seven browser/PWA/addon CI must pass before merge. On main require two full exact-SHA runs, then repin Desktop and rerun three native installed sidecar/SQLite checks twice.
+
+The signed-media URL is never deliberately re-signed or rewritten by the hydration function. This code-path fixture does not prove real long-running playback on a user's device. Next-PWA `braces` high advisory remains unresolved; release_ready=false, public release not executed; signing is deferred to the actual publication step.

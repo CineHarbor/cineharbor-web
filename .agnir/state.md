@@ -73,3 +73,7 @@ Added a separate production-scope frozen audit ahead of the still-required full 
 ### Corrected 2026-10-20 advisory scope
 
 Production-only frozen audit run 39397195391 (artifact 12252495648) **also fails** with `braces@3.0.3` high on `next-pwa > globby > fast-glob > micromatch`, not just on ESLint. The prior development-only assumption is superseded. Raw audit shows 0 critical, 1 high, 1 moderate for prod; full audit still 0 critical, 1 high, 3 moderate, 1 low. The moderate prod serialize-javascript 7.0.3 now has a published >=7.0.5 patch. No security release signoff, waiver or runtime-exposure conclusion is justified yet. A real dependency/PWA migration or documented, tested build-path risk resolution remains necessary.
+
+## 2026-10-21 VOD title-card preview hydration candidate
+
+The Web source still lacked addon meta/stream hydration of catalog preview skeletons, as originally shown by conflicted old PR #1. The isolated current-Next-15 candidate repairs that product path and adds 4 focused regressions without changing the Web security lock, SDK pin or desktop API. PR and twice-main functional CI plus final three-OS installed Desktop retest remain required. No release or security-audit signoff. See `.agnir/evidence/2026-10-21-vod-hydration.md`.
